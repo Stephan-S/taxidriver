@@ -1,0 +1,360 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  <body>
+  
+  
+	<script src="/socket.io/socket.io.js"></script>
+	
+	<canvas id="myCanvas" width="1280" height="720"></canvas>
+
+	<script>
+
+	var canvas = document.getElementById("myCanvas");
+	var ctx = canvas.getContext("2d");
+	ctx.font = "10px Arial";
+		
+	var socket = io();
+
+	socket.on('data', function(servercargo){
+		cargo = servercargo;
+	});
+
+	socket.on('taxis', function(servertaxis){
+		taxis = servertaxis;
+	});
+
+	var taxisize = 0;
+	var taxiWidth = 15;
+	var taxiHeight = 30;
+	var passengers = 0;
+	var max_passengers = 1;
+	var pilot_x = [];
+	var pilot_y = [];
+	var passenger_offset_x = [0,6,-6,0,6,-6];
+	var passenger_offset_y = [-4,-4,-4,-12,-12,-12];
+	var direction = 0; // -PI to +Pi
+	var speed = 180;
+	var turningSpeed = 3;
+	var pos_x = 100;
+	var pos_y = 100;
+	var points = 0;
+	var min_viewdistance = 250;
+
+	var myID = Math.floor((Math.random() * 1000)) + 1;
+
+	var fieldwidth = 1280;
+	var fieldheight = 720;
+
+	var field_x = 0;
+	var field_y = 0;
+
+	var connected = false;
+
+	var taxis = [];
+
+	var now = Date.now(); 
+	var time = now;
+	var lastCargo = now;
+	var dt = 0;
+
+	var cargo = [];
+	var base = { x:50, y:50, radius:50};
+
+	var rightPressed = false;
+	var leftPressed = false;
+
+	document.addEventListener("keydown", keyDownHandler, false);
+	document.addEventListener("keyup", keyUpHandler, false);
+
+	function mypoint(x,y){
+		this.x = x;
+		this.y = y;
+	}
+
+	function drawTaxis(){
+		for (var t = 0; t < taxis.length; t++) {
+			if(taxis[t].id != myID) {
+				ctx.save();
+				ctx.translate(taxis[t].pos_x, taxis[t].pos_y);
+				ctx.rotate(-taxis[t].direction);
+				ctx.fillStyle = "blue";
+				ctx.fillRect(-taxis[t].taxiWidth / 2, -taxis[t].taxiHeight / 2, taxis[t].taxiWidth, taxis[t].taxiHeight);
+
+				ctx.restore();
+
+				ctx.save();
+				ctx.translate(taxis[t].pos_x, taxis[t].pos_y);
+				ctx.rotate(-taxis[t].direction);
+				ctx.beginPath();
+				ctx.fillStyle = "black";
+				ctx.arc(0, 4, 3, 0, 2 * Math.PI);
+				ctx.fill();
+				ctx.closePath();
+				ctx.restore();
+
+				for (var p = 0; p < taxis[t].passengers; p++){
+					ctx.save();
+					ctx.translate(taxis[t].pos_x,taxis[t].pos_y);
+					ctx.rotate(-taxis[t].direction);
+					ctx.beginPath();
+					ctx.fillStyle = "red";
+					ctx.arc(passenger_offset_x[p],passenger_offset_y[p],3,0,2*Math.PI);
+					ctx.fill();
+					ctx.closePath();
+					ctx.restore();
+				}				
+
+			}
+		}
+
+	}
+
+	function drawTaxi(){
+
+		if( ((pos_x + taxiWidth/2) > fieldwidth) || ((pos_x - taxiWidth/2) < 0) || ((pos_y + taxiHeight/2) > fieldheight) || ((pos_y - taxiHeight/2) < 0)){
+
+			alert("Gameover. Points: " + points);
+			document.location.reload();
+		}
+
+		ctx.save();
+		ctx.translate(pos_x,pos_y);
+		ctx.rotate(-direction);
+		ctx.fillStyle = "blue";
+		ctx.fillRect(-taxiWidth/2, -taxiHeight/2, taxiWidth, taxiHeight);
+
+		ctx.restore();
+
+		ctx.save();
+		ctx.translate(pos_x,pos_y);
+		ctx.rotate(-direction);
+		ctx.beginPath();
+		ctx.fillStyle = "black";
+		ctx.arc(0,4,3,0,2*Math.PI);
+		ctx.fill();
+		ctx.closePath();
+		ctx.restore();
+
+		for (var p = 0; p < passengers; p++){
+			ctx.save();
+			ctx.translate(pos_x,pos_y);
+			ctx.rotate(-direction);
+			ctx.beginPath();
+			ctx.fillStyle = "red";
+			ctx.arc(passenger_offset_x[p],passenger_offset_y[p],3,0,2*Math.PI);
+			ctx.fill();
+			ctx.closePath();
+			ctx.restore();
+		}
+
+		//ctx.beginPath();
+		//ctx.rect(pos_x, pos_y, 30, 15);
+		//ctx.fillStyle = "blue";
+		//ctx.fill();
+		//ctx.closePath();
+
+		pos_x = pos_x + Math.sin(direction)*dt*speed;
+		pos_y = pos_y + Math.cos(direction)*dt*speed;
+
+		if(pos_y +min_viewdistance > field_y + canvas.height){
+			field_y = field_y + ((pos_y + min_viewdistance)- (field_y + canvas.height));
+		}
+		if(pos_y - min_viewdistance < field_y){
+			field_y = field_y - (- (pos_y - min_viewdistance)+ (field_y ));
+		}
+		if(field_y < 0){ field_y = 0;};
+		if(field_y + canvas.height > fieldheight) {field_y = fieldheight-canvas.height};
+
+		if(pos_x +min_viewdistance > field_x + canvas.width){
+			field_x = field_x + ((pos_x + min_viewdistance)- (field_x + canvas.width));
+		}
+		if(pos_x - min_viewdistance < field_x){
+			field_x = field_x - (- (pos_x - min_viewdistance)+ (field_x ));
+		}
+		if(field_x < 0){ field_x = 0;};
+		if(field_x + canvas.width > fieldwidth) {field_x = fieldwidth-canvas.width};
+
+
+
+	}
+
+	function upgradeTaxi() {
+		switch(taxisize){
+			case 0:
+				max_passengers = max_passengers + 1;
+				taxiWidth = taxiWidth * 2;
+				taxisize++;
+				break;
+			case 1:
+				max_passengers = max_passengers + 1;
+				taxisize++;
+				break;
+			case 2:
+				max_passengers++;
+				taxisize++;
+				taxiHeight = taxiHeight+10;
+				break;
+			case 3:
+				max_passengers++;
+				taxisize++;
+				break;
+			case 4:
+				max_passengers++;
+				taxisize++;
+				break;
+			case 5:
+				max_passengers++;
+				taxisize++;
+				break;
+		}
+
+	}
+
+	function drawBase(){
+		ctx.beginPath();
+		ctx.rect(base.x-base.radius, base.y-base.radius, base.radius*2, base.radius*2);
+		ctx.fillStyle = "green";
+		ctx.fill();
+		ctx.closePath();
+	}
+		
+	function draw(){
+		requestAnimationFrame(draw);	
+		now = Date.now();
+		dt = (now - time)*0.001;
+		time = now;
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		if (leftPressed){
+			direction = (((direction+(turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
+		}
+		if (rightPressed){
+			if( (direction-(0.5*dt)) < (-Math.PI) ){
+				direction = (direction-(turningSpeed*dt))+2*Math.PI;
+			}
+			else{
+				direction = (((direction-(turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
+			}
+		}
+
+		ctx.save();
+		ctx.translate(-field_x,-field_y);
+		drawBase();
+		drawTaxi();
+		//generateCargo();
+		drawCargo();
+		checkCargoHit();
+		deliverCargo();
+		drawTaxis();
+
+		ctx.beginPath();
+		ctx.lineWidth="5";
+		ctx.strokeStyle="black";
+		ctx.rect(0,0, fieldwidth, fieldheight);
+		ctx.stroke();
+		ctx.closePath();
+
+		ctx.restore();
+
+		if((now-lastCargo) > 500){
+		socket.emit("position",{id:myID,pos_x:pos_x,pos_y:pos_y,
+					direction:direction,name:"MyName",lastUpdate:Date.now(),
+					taxiWidth:taxiWidth,taxiHeight:taxiHeight,
+					passengers:passengers});
+		}
+
+	}	
+
+	draw();
+
+	function generateCargo() {
+		if( (now-lastCargo) > 3000){
+			var data = { msg: "mytext"};
+			socket.emit('data', data);
+			lastCargo = now;
+			cargo[cargo.length] = new mypoint(Math.floor((Math.random() * canvas.width-5) + 1),
+					Math.floor((Math.random() * canvas.height-5) + 1));
+		}
+	}
+
+	function drawCargo() {
+		for(f = 0; f < cargo.length; f++){
+			ctx.beginPath();
+			ctx.arc(cargo[f].x, cargo[f].y, 3, 0, Math.PI*2);
+			ctx.fillStyle = "red";
+			ctx.fill();
+			ctx.closePath();
+		}
+	}
+
+	function checkCargoHit(){
+		for (var c = 0; c<cargo.length; c++){
+			if (cargo[c].x < pos_x+taxiWidth/2 && cargo[c].x > pos_x - taxiWidth/2){
+				if (cargo[c].y < pos_y+taxiHeight/2 && cargo[c].y > pos_y - taxiHeight/2){
+					if(addCargo()){
+						socket.emit("cargo",c);
+						cargo.splice(c,1);
+					}
+				}
+			}
+		}
+	}
+
+	function addCargo(){
+		if( passengers < max_passengers){
+			passengers = passengers + 1;
+			points = points +1;
+			return true;
+		}
+		return false;
+	}
+
+	function deliverCargo(){
+
+		if(pos_x < base.x + base.radius && pos_x > base.x - base.radius ){
+			if(pos_y < base.y + base.radius && pos_y > base.y - base.radius ) {
+				speed = speed + 20 * passengers;
+				if (passengers > 0) {
+					upgradeTaxi();
+				}
+				passengers = 0;
+			}
+		}
+
+	}
+
+	function keyDownHandler(e) {
+		if(e.keyCode == 39) {
+			rightPressed = true;
+		}
+		else if(e.keyCode == 37) {
+			leftPressed = true;
+		}
+	}
+
+	function keyUpHandler(e) {
+		if(e.keyCode == 39) {
+			rightPressed = false;
+		}
+		else if(e.keyCode == 37) {
+			leftPressed = false;
+		}
+	}
+
+	</script>	
+	
+  </body>
+</html>

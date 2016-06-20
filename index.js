@@ -1,0 +1,126 @@
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+var usercount = 0;
+var active = false;
+
+app.get('/', function(req, res){
+  res.sendFile(__dirname + '/index.html');
+});
+
+io.on('connection', function(socket){
+  console.log('a user connected');
+  usercount++;
+  active = true;
+  socket.on('disconnect', function(){
+    console.log('user disconnected');
+    usercount--;
+    if(usercount==0){
+      console.log('No More users. Deactivating');
+      active = false;
+      cargo = [];
+    }
+    //active = false;
+    //cargo = [];
+  });
+  
+  socket.on("data", function(data){
+	  console.log("data: " + data.msg);
+  });
+
+  socket.on("cargo", function(data){
+    console.log("cargo remove: " + data);
+    cargo.splice(data,1);
+    io.emit('data', cargo);
+  });
+
+  socket.on("position", function(taxi){
+    //console.log("taxi data received: " + taxi.id);
+    var id = -1;
+    for(var t = 0; t < taxis.length; t++){
+      if(taxis[t].id == taxi.id){
+        id = t;
+      }
+    }
+    if(id == -1) {
+      taxis[taxis.length] = taxi;
+      taxis[taxis.length-1].lastUpdate = Date.now();
+    }
+    else{
+      taxis[id].pos_x = taxi.pos_x;
+      taxis[id].pos_y = taxi.pos_y;
+      taxis[id].direction = taxi.direction;
+      taxis[id].taxiWidth = taxi.taxiWidth;
+      taxis[id].taxiHeight = taxi.taxiHeight;
+      taxis[id].lastUpdate = Date.now();
+      taxis[id].passengers = taxi.passengers;
+    }
+  });
+
+});
+
+http.listen(3000, function(){
+  console.log('listening on *:3000');
+});
+
+var cargo = [];
+var taxis = [];
+
+function pos(x,y){
+  this.x = x;
+  this.y = y;
+}
+
+var now = Date.now();
+var time = now;
+var lastCargo = now;
+
+function act() {
+
+  now = Date.now();
+  dt = (now - time) * 0.001;
+  time = now;
+
+  if (active) {
+    //console.log("acting");
+    generateCargo();
+    sendTaxiData();
+  }
+
+  setTimeout(act,20);
+}
+act();
+
+function sendTaxiData(){
+  for(var t = 0; t < taxis.length; t++){
+	 // console.log("index: " + taxis[t].id +  " now: " + now + " lastUpdate: " + taxis[t].lastUpdate + " diff: " + (now - taxis[t].lastUpdate));
+    if( (now - taxis[t].lastUpdate) > 200){
+		
+	  
+      taxis.splice(t,1);
+    }
+  }
+  io.emit("taxis", taxis);
+}
+
+var fieldwidth = 1280;
+var fieldheight= 720;
+
+function generateCargo() {
+  if( (now-lastCargo) > 3000){
+    lastCargo = now;
+
+    if(cargo.length<15) {
+
+      cargo[cargo.length] = {
+        x: (Math.floor((Math.random() * fieldwidth - 5) + 1)),
+        y: (Math.floor((Math.random() * fieldheight - 5) + 1))
+      };
+
+      console.log('generated cargo');
+      io.emit('data', cargo);
+
+      console.log('send cargo');
+    }
+  }
+}
