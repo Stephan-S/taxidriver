@@ -54,6 +54,9 @@ io.on('connection', function(socket){
       taxis[id].taxiHeight = taxi.taxiHeight;
       taxis[id].lastUpdate = Date.now();
       taxis[id].passengers = taxi.passengers;
+      taxis[id].speed = taxi.speed;
+      taxis[id].leftPressed = taxi.leftPressed;
+      taxis[id].rightPressed = taxi.rightPressed;
     }
   });
 
@@ -87,7 +90,7 @@ function act() {
     sendTaxiData();
   }
 
-  setTimeout(act,20);
+  setTimeout(act,200);
 }
 act();
 
@@ -120,7 +123,7 @@ function generateCargo() {
       console.log('generated cargo');
       io.emit('data', cargo);
 
-      console.log('send cargo');
+      //console.log('send cargo');
     }
   }
 }

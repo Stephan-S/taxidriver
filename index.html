@@ -115,7 +115,23 @@
 					ctx.fill();
 					ctx.closePath();
 					ctx.restore();
-				}				
+				}
+
+				if (taxis[t].leftPressed){
+                   taxis[t].direction = (((taxis[t].direction+(turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
+                }
+                if (taxis[t].rightPressed){
+                    if( (taxis[t].direction-(0.5*dt)) < (-Math.PI) ){
+                        taxis[t].direction = (taxis[t].direction-(turningSpeed*dt))+2*Math.PI;
+                    }
+                    else{
+                        taxis[t].direction = (((taxis[t].direction-(turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
+                    }
+                }
+
+
+                taxis[t].pos_x = taxis[t].pos_x + Math.sin(taxis[t].direction)*dt*taxis[t].speed;
+		        taxis[t].pos_y = taxis[t].pos_y + Math.cos(taxis[t].direction)*dt*taxis[t].speed;
 
 			}
 		}
@@ -273,6 +289,7 @@
 		socket.emit("position",{id:myID,pos_x:pos_x,pos_y:pos_y,
 					direction:direction,name:"MyName",lastUpdate:Date.now(),
 					taxiWidth:taxiWidth,taxiHeight:taxiHeight,
+					speed:speed,leftPressed:leftPressed,rightPressed:rightPressed,
 					passengers:passengers});
 		}
 
