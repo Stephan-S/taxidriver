@@ -2,6 +2,8 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var usercount = 0;
+var highscore = 0;
+var highscore_name = "NoOne";
 var active = false;
 
 app.get('/', function(req, res){
@@ -32,6 +34,18 @@ io.on('connection', function(socket){
     console.log("cargo remove: " + data);
     cargo.splice(data,1);
     io.emit('data', cargo);
+  });
+
+  socket.on("GameOver", function(data){
+    console.log("Player lost: " + data.id + " points: " + data.points);
+    if(usercount==1){
+        cargo = [];
+    }
+    if(data.points > highscore){
+        highscore = data.points;
+        highscore_name = data.name;
+        io.emit('score', {highscore:highscore, name:highscore_name});
+    }
   });
 
   socket.on("position", function(taxi){
