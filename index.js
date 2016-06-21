@@ -14,6 +14,9 @@ io.on('connection', function(socket){
   console.log('a user connected');
   usercount++;
   active = true;
+
+  io.emit('score', {highscore:highscore, name:highscore_name});
+
   socket.on('disconnect', function(){
     console.log('user disconnected');
     usercount--;
@@ -130,14 +133,14 @@ function generateCargo() {
     if(cargo.length<15) {
 
       cargo[cargo.length] = {
-        x: (Math.floor((Math.random() * fieldwidth - 5) + 1)),
-        y: (Math.floor((Math.random() * fieldheight - 5) + 1))
+        x: (Math.floor((Math.random() * fieldwidth - 10) + 5)),
+        y: (Math.floor((Math.random() * fieldheight - 10) + 5))
       };
 
       console.log('generated cargo');
-      io.emit('data', cargo);
 
       //console.log('send cargo');
     }
+    io.emit('data', cargo);
   }
 }
