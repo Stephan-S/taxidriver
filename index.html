@@ -60,6 +60,7 @@
 	var field_y = 0;
 	var connected = false;
 	var taxis = [];
+	var houses = [];
 	var now = Date.now();
 	var time = now;
 	var spawnTime = now;
@@ -95,6 +96,12 @@
 	socket.on('taxis', function(servertaxis){
 		taxis = servertaxis;
 	});
+
+  socket.on('houses', function(serverhouses){
+
+	console.log("Getting houses")
+     houses = serverhouses
+  });
 
 	socket.on('score', function(score){
 		highscore = score.highscore;
@@ -218,6 +225,7 @@
 
 
 
+		drawHouses();
 		drawBase();
 		drawTaxi();
 		drawScore();
@@ -357,6 +365,23 @@
 			}
 		}
 
+	}
+  
+	function drawHouses(){
+		for(var i=0;i<houses.length;i++) {
+			ctx.save();
+			ctx.translate(-field_x,-field_y);
+			ctx.beginPath();
+			ctx.moveTo(houses[i][0].x,houses[i].y);
+			for(dot in houses[i]){
+				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
+			}
+			ctx.lineTo(houses[i][0].x,houses[i].y);
+			ctx.closePath();
+			ctx.strokeStyle = "black";
+			ctx.stroke();
+			ctx.restore();
+		}
 	}
 
 	function drawCargo() {

@@ -16,7 +16,8 @@ io.on('connection', function(socket){
   active = true;
 
   io.emit('score', {highscore:highscore, name:highscore_name});
-
+  generateHouses(); 
+  
   socket.on('disconnect', function(){
     console.log('user disconnected');
     usercount--;
@@ -38,6 +39,8 @@ io.on('connection', function(socket){
     cargo.splice(data,1);
     io.emit('data', cargo);
   });
+  
+
 
   socket.on("GameOver", function(data){
     //console.log("Player lost: " + data.id + " points: " + data.points);
@@ -86,6 +89,8 @@ http.listen(3000, function(){
 
 var cargo = [];
 var taxis = [];
+var houses = [];
+
 
 function pos(x,y){
   this.x = x;
@@ -124,8 +129,37 @@ function sendTaxiData(){
   io.emit("taxis", taxis);
 }
 
-var fieldwidth = 1920;
-var fieldheight= 965;
+var fieldwidth = 2000;
+var fieldheight = 1000;
+var chunksize = 300;
+
+
+function generateHouses() {
+	var maxHouses_x = Math.floor(fieldwidth/chunksize);
+	var maxHouses_y = Math.floor(fieldwidth/chunksize);
+	for(var x=0;x<maxHouses_x;x++){
+		for(var y=0;y<maxHouses_y;y++){
+			houses[x+maxHouses_x*y] = [{
+				'x': x*chunksize+60,
+				'y': y*chunksize+60
+			},
+			{
+				'x': x*chunksize+(chunksize-60),
+				'y': y*chunksize+60
+			},
+			{
+				'x': x*chunksize+(chunksize-60),
+				'y': y*chunksize+(chunksize-60)
+			},
+			{
+				'x': x*chunksize+60,
+				'y': y*chunksize+(chunksize-60)
+			}]
+		}
+	}
+	
+	io.emit('houses', houses);
+}
 
 function generateCargo() {
   if( (now-lastCargo) > 1500){
