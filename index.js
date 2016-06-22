@@ -16,8 +16,8 @@ io.on('connection', function(socket){
   active = true;
 
   io.emit('score', {highscore:highscore, name:highscore_name});
-  generateHouses(); 
-  
+io.emit('houses', houses);
+	
   socket.on('disconnect', function(){
     console.log('user disconnected');
     usercount--;
@@ -133,33 +133,102 @@ var fieldwidth = 2000;
 var fieldheight = 1000;
 var chunksize = 300;
 
+/*
+ * generates a rectangle house
+ * param x: x coordinate of the chunk where the house should be created
+ * param y: y coordinate of the chunk where the house should be created
+ */
+function generateRectHouse(x,y) {
+	house = [{
+		'x': x+60+Math.random()*20,
+		'y': y+60+Math.random()*20
+	},
+	{
+		'x': x+(chunksize-60)+Math.random()*20,
+		'y': y+60+Math.random()*20
+	},
+	{
+		'x': x+(chunksize-60)+Math.random()*20,
+		'y': y+(chunksize-60)+Math.random()*20
+	},
+	{
+		'x': x+60+Math.random()*20,
+		'y': y+(chunksize-60)+Math.random()*20
+	}];
+	houses.push(house);
+}
+function generateTriangleHouse(x,y){
+	house = [{
+		'x': x+60+Math.random()*20,
+		'y': y+60+Math.random()*20
+	},
+	{
+		'x': x+(chunksize-60)+Math.random()*20,
+		'y': y+60+Math.random()*20
+	},
+	{
+		'x': x+60+Math.random()*20,
+		'y': y+(chunksize-60)+Math.random()*20
+	}];
+	houses.push(house);
+}
+
+function generateDoubleTriangleHouse(x,y){
+	house = [{
+		'x': x+(chunksize-60)+Math.random()*20,
+		'y': y+100+Math.random()*20
+	},
+	{
+		'x': x+100+Math.random()*10,
+		'y': y+(chunksize-60)+Math.random()*10
+	},
+	{
+		'x': x+(chunksize-60)+Math.random()*10,
+		'y': y+(chunksize-60)+Math.random()*10
+	}]
+	houses.push(house);
+	house = [
+	{
+		'x': x+60+Math.random()*10,
+		'y': y+60+Math.random()*10
+	},
+	{
+		'x': x+(chunksize-100)+Math.random()*10,
+		'y': y+60+Math.random()*10
+	},
+	{
+		'x': x+60+Math.random()*20,
+		'y': y+(chunksize-100)+Math.random()*20
+	}];
+	houses.push(house);
+}
 
 function generateHouses() {
+	
 	var maxHouses_x = Math.floor(fieldwidth/chunksize);
 	var maxHouses_y = Math.floor(fieldwidth/chunksize);
 	for(var x=0;x<maxHouses_x;x++){
 		for(var y=0;y<maxHouses_y;y++){
-			houses[x+maxHouses_x*y] = [{
-				'x': x*chunksize+60+Math.random()*20,
-				'y': y*chunksize+60+Math.random()*20
-			},
-			{
-				'x': x*chunksize+(chunksize-60)+Math.random()*20,
-				'y': y*chunksize+60+Math.random()*20
-			},
-			{
-				'x': x*chunksize+(chunksize-60)+Math.random()*20,
-				'y': y*chunksize+(chunksize-60)+Math.random()*20
-			},
-			{
-				'x': x*chunksize+60+Math.random()*20,
-				'y': y*chunksize+(chunksize-60)+Math.random()*20
-			}]
+			var housetype=Math.floor(Math.random()*3);
+			var house = []
+			switch(housetype){
+				case 0:
+					generateRectHouse(x*chunksize,y*chunksize);
+					break;
+				case 1:
+					generateTriangleHouse(x*chunksize,y*chunksize);
+					break;
+				case 2:
+					generateDoubleTriangleHouse(x*chunksize,y*chunksize); 
+					break;
+				default:
+					generateRectHouse(x*chunksize,y*chunksize);
+			}
 		}
 	}
-	
-	io.emit('houses', houses);
+	houses.splice(0,1);
 }
+generateHouses(); 
 
 function generateCargo() {
   if( (now-lastCargo) > 1500){
