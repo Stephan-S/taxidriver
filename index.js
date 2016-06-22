@@ -107,7 +107,7 @@ function act() {
     sendTaxiData();
   }
 
-  setTimeout(act,200);
+  setTimeout(act,20);
 }
 act();
 
@@ -127,14 +127,14 @@ var fieldwidth = 1280;
 var fieldheight= 720;
 
 function generateCargo() {
-  if( (now-lastCargo) > 3000){
+  if( (now-lastCargo) > 1500){
     lastCargo = now;
 
     if(cargo.length<15) {
 
       cargo[cargo.length] = {
-        x: (Math.floor((Math.random() * fieldwidth - 10) + 5)),
-        y: (Math.floor((Math.random() * fieldheight - 10) + 5))
+        x: (Math.floor((Math.random() * (fieldwidth - 30)) + 15)),
+        y: (Math.floor((Math.random() * (fieldheight - 30)) + 15))
       };
 
       console.log('generated cargo');

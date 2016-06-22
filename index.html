@@ -38,6 +38,7 @@
 	var acceleration = 30;
 	var speed_gain = 10;
 	var turningSpeed = 3;
+	var autoPilotturningSpeed = 8;
 	var pos_x = Math.floor((Math.random() * canvas.width-50) + 1);
 	var pos_y = Math.floor((Math.random() * canvas.height-50) + 1);
 	var points = 0;
@@ -62,7 +63,8 @@
 	var rightPressed = false;
 	var leftPressed = false;
 	var socket = io();
-	var debug = false;
+	var debug = true;
+	var target = {x:-1,y:-1};
 	ctx.font = "10px Arial";
 
 	socket.on('data', function(servercargo){
@@ -134,40 +136,68 @@
 
 	function autoPilot(){
 
-		if(passengers == max_passengers || cargo == []){
-			autoPilotDeliverCargo();
+		var targetFound = false;
+		var min_distance = -1;
+		if((passengers == max_passengers) || (cargo.length == 0)){
+			target = {x:base.x, y:base.y};
+			autoPilotGoToTarget();
+		}
+		else{
+			for(var c = 0; c < cargo.length; c++){
+				if(targetFound == false){
+					target = {x: cargo[c].x, y:cargo[c].y};
+					min_distance = Math.sqrt(Math.pow(pos_x - cargo[c].x,2)+Math.pow(pos_y - cargo[c].y,2));
+					targetFound = true;
+				}
+				else{
+					if( (min_distance - Math.sqrt(Math.pow(pos_x - cargo[c].x,2)+Math.pow(pos_y - cargo[c].y,2))) > 0){
+						target = {x: cargo[c].x, y:cargo[c].y};
+						min_distance = Math.sqrt(Math.pow(pos_x - cargo[c].x,2)+Math.pow(pos_y - cargo[c].y,2));
+					}
+				}
+			}
+
+		}
+		if(targetFound){
+			autoPilotGoToTarget();
 		}
 
 	}
 
-	function autoPilotDeliverCargo(){
+	function autoPilotGoToTarget() {
 
-		if(passengers == 0){
-			autoPilot();
-		}
-		else{
-			console.log("direction: " + direction + " atan2: " + Math.atan2( pos_x - base.x, pos_y - base.y) + "diff: " +  (direction - Math.atan2( pos_x - base.x, pos_y - base.y) ));
-			if( direction < -Math.atan2( pos_x - base.x, pos_y - base.y)  ){
+		var crossProduct = Math.sin(direction) * (pos_y - target.y) - ( Math.cos(direction) * (pos_x - target.x)  );
+		//console.log("direction: " + direction + " target: " + target.x + "/" + target.y + " cross: " + crossProduct);
+		if (Math.abs(crossProduct) > 10) {
 
-				direction = (((direction+(2*turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
-			}
-			if( direction > -Math.atan2(pos_x - base.x, pos_y -base.y) ){
-				if( (direction-(0.5*dt)) < (-Math.PI) ){
-					direction = (direction-(2*turningSpeed*dt))+2*Math.PI;
-				}
-				else{
-					direction = (((direction-(2*turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
+			if (crossProduct > 0) {
+
+				direction = (((direction + (2 * autoPilotturningSpeed * dt)) + Math.PI) % (2 * Math.PI)) - Math.PI;
+				crossProduct = Math.sin(direction) * (pos_y - target.y) - ( Math.cos(direction) * (pos_x - target.x)  );
+				if (crossProduct < 0) {
+					direction = Math.atan2(target.x-pos_x,target.y-pos_y);
 				}
 			}
+			else {
+				if ((direction - (0.5 * dt)) < (-Math.PI)) {
+					direction = (direction - (2 * autoPilotturningSpeed * dt)) + 2 * Math.PI;
+				}
+				else {
+					direction = (((direction - (2 * autoPilotturningSpeed * dt)) + Math.PI) % (2 * Math.PI)) - Math.PI;
+				}
+
+				crossProduct = Math.sin(direction) * (pos_y - target.y) - ( Math.cos(direction) * (pos_x - target.x)  );
+				if (crossProduct > 0) {
+					direction = Math.atan2(target.x-pos_x,target.y-pos_y);
+				}
+			}
 		}
+
 
 	}
 
 	function visualizeAngles(){
-		console.log("Visualizing Direction Angle");
-
-
-
+		//console.log("Visualizing Direction Angle");
 
 		ctx.beginPath();
 		ctx.lineWidth="5";
@@ -182,7 +212,7 @@
 		ctx.lineWidth="5";
 		ctx.strokeStyle = "pink";
 		ctx.moveTo(pos_x,pos_y);
-		ctx.lineTo(pos_x + Math.sin(Math.atan2(base.x - pos_x,base.y-pos_y))*30, pos_y + Math.cos(Math.atan2(base.x-pos_x, base.y -pos_y))*30 );
+		ctx.lineTo(pos_x + Math.sin(Math.atan2(target.x - pos_x,target.y-pos_y))*30, pos_y + Math.cos(Math.atan2(target.x-pos_x, target.y -pos_y))*30 );
 		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
@@ -514,8 +544,8 @@
 			if (cargo[c].x < pos_x+taxiWidth/2 && cargo[c].x > pos_x - taxiWidth/2){
 				if (cargo[c].y < pos_y+taxiHeight/2 && cargo[c].y > pos_y - taxiHeight/2){
 					if(addCargo()){
-						socket.emit("cargo",c);
 						cargo.splice(c,1);
+						socket.emit("cargo",c);
 					}
 				}
 			}
@@ -552,6 +582,13 @@
 		else if(e.keyCode == 37) {
 			leftPressed = true;
 		}
+		else if(e.keyCode == 68) {
+			debug = !debug;
+		}
+		else if(e.keyCode == 70) {
+			autoPilotturningSpeed++;
+		}
+		console.log("key: " + e.keyCode);
 	}
 
 	function keyUpHandler(e) {
@@ -625,7 +662,7 @@
 						(Math.cos(angle) * (point[1] - pivot[1])) +
 						pivot[1]);
 		return [x, y];
-	};
+	}
 
 	/**
 	 * Helper function to determine whether there is an intersection between the two polygons described
@@ -689,7 +726,7 @@
 			}
 		}
 		return true;
-	};
+	}
 
 	</script>	
 	
