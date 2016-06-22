@@ -602,11 +602,31 @@
 
 	function reset(){
 
+
 		var valid_pos = false;
 		while(!valid_pos){
 
 			pos_x = Math.floor((Math.random() * canvas.width-80) + 40);
 			pos_y = Math.floor((Math.random() * canvas.height-80) + 40);
+
+			var c1 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y+taxiHeight/2],direction);
+			var c2 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y-taxiHeight/2],direction);
+			var c3 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y+taxiHeight/2],direction);
+			var c4 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y-taxiHeight/2],direction);
+			var mycorners = [
+				{ 	x: c1[0],
+					y: c1[1]
+				},
+				{ 	x: c2[0],
+					y: c2[1]
+				},
+				{ 	x: c3[0],
+					y: c3[1]
+				},
+				{ 	x: c4[0],
+					y: c4[1]
+				}
+			];
 
 			for(h=0; h < houses.length; h++){
 
