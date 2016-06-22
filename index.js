@@ -40,13 +40,14 @@ io.on('connection', function(socket){
   });
 
   socket.on("GameOver", function(data){
-    console.log("Player lost: " + data.id + " points: " + data.points);
+    //console.log("Player lost: " + data.id + " points: " + data.points);
     if(usercount==1){
         cargo = [];
     }
     if(data.points > highscore){
         highscore = data.points;
         highscore_name = data.name;
+        console.log("Highscore: " + data.id + " points: " + data.points);
         io.emit('score', {highscore:highscore, name:highscore_name});
     }
   });
@@ -123,21 +124,21 @@ function sendTaxiData(){
   io.emit("taxis", taxis);
 }
 
-var fieldwidth = 1280;
-var fieldheight= 720;
+var fieldwidth = 1920;
+var fieldheight= 965;
 
 function generateCargo() {
   if( (now-lastCargo) > 1500){
     lastCargo = now;
 
-    if(cargo.length<15) {
+    if(cargo.length<45) {
 
       cargo[cargo.length] = {
         x: (Math.floor((Math.random() * (fieldwidth - 30)) + 15)),
         y: (Math.floor((Math.random() * (fieldheight - 30)) + 15))
       };
 
-      console.log('generated cargo');
+      //console.log('generated cargo');
 
       //console.log('send cargo');
     }

@@ -4,7 +4,7 @@
     <title>Socket.IO chat</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font: 13px Helvetica, Arial; }
+      body { font: 13px Helvetica, Arial;  overflow: hidden; }
       form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
@@ -24,6 +24,9 @@
 
 	var canvas = document.getElementById("myCanvas");
 	var ctx = canvas.getContext("2d");
+	ctx.canvas.width  = window.innerWidth;
+	ctx.canvas.height = window.innerHeight;
+
 	var taxisize = 0;
 	var taxiWidth = 15;
 	var taxiHeight = 30;
@@ -37,18 +40,22 @@
 	var max_speed = 180;
 	var acceleration = 30;
 	var speed_gain = 10;
-	var turningSpeed = 3;
+	var handlingLevel = 0;
+	var handlingLevel_max = 5;
+	var taxilevel = 0;
+	var taxilevel_max = 6;
+	var turningSpeed = getHandling(handlingLevel);
 	var autoPilotturningSpeed = 8;
-	var pos_x = Math.floor((Math.random() * canvas.width-50) + 1);
-	var pos_y = Math.floor((Math.random() * canvas.height-50) + 1);
+	var pos_x = Math.floor((Math.random() * canvas.width-100) + 50);
+	var pos_y = Math.floor((Math.random() * canvas.height-100) + 50);
 	var points = 0;
 	var min_viewdistance = 250;
 	var highscore = 0;
 	var highscore_name = "NoOne";
 	var name = "Player1";
 	var myID = Math.floor((Math.random() * 1000)) + 1;
-	var fieldwidth = 1280;
-	var fieldheight = 720;
+	var fieldwidth = ctx.canvas.width;
+	var fieldheight = ctx.canvas.height;
 	var field_x = 0;
 	var field_y = 0;
 	var connected = false;
@@ -57,14 +64,28 @@
 	var time = now;
 	var spawnTime = now;
 	var lastCargo = now;
+	var lastLogged = now;
+	var logInterval = 500;
 	var dt = 0;
 	var cargo = [];
 	var base = { x:75, y:75, radius:75};
 	var rightPressed = false;
 	var leftPressed = false;
 	var socket = io();
-	var debug = true;
+	var debug = false;
 	var target = {x:-1,y:-1};
+	var level = 0;
+	var experience = 0;
+	var skillpoints = 0;
+	var brakelevel = 0;
+	var brakelevel_max = 5;
+	var decelaration = (getBrakeConfig(brakelevel)).deceleration;
+	var breaking_power = 200;
+	var breaking_power_max = (getBrakeConfig(brakelevel)).breaking_power_max;
+	var breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
+	var breaking = false;
+	var max_turning_speed = 8;
+
 	ctx.font = "10px Arial";
 
 	socket.on('data', function(servercargo){
@@ -83,56 +104,7 @@
 	document.addEventListener("keydown", keyDownHandler, false);
 	document.addEventListener("keyup", keyUpHandler, false);
 
-	function getTaxiConfig(size){
-		var configuration = {	passenger_offset_x:[],
-								passenger_offset_y:[],
-								pilot_x:0, pilot_y:0
-		};
-		switch(size){
-			case 0:
-				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
-				configuration.passenger_offset_y = [-4,-4,-4,-12,-12,-12,-20,-20,-20,-28,-28,-28];
-				configuration.pilot_x = 0;
-				configuration.pilot_y = 4;
-				break;
 
-			case 1:
-			case 2:
-
-				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
-				configuration.passenger_offset_y = [-4,-4,-4,-12,-12,-12,-20,-20,-20,-28,-28,-28];
-				configuration.pilot_x = 0;
-				configuration.pilot_y = 4;
-				break;
-
-
-			case 3:
-			case 4:
-			case 5:
-				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
-				configuration.passenger_offset_y = [2,2,2,-6,-6,-6,-14,-14,-14,-22,-22,-22,-30,-30,-30];
-				configuration.pilot_x = 0;
-				configuration.pilot_y = 10;
-				break;
-			case 6:
-			case 7:
-			case 8:
-				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
-				configuration.passenger_offset_y = [10,10,10,2,2,2,-6,-6,-6,-14,-14,-14,-22,-22,-22,-30,-30,-30];
-				configuration.pilot_x = 0;
-				configuration.pilot_y = 18;
-				break;
-			case 9:
-			case 10:
-			case 11:
-				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
-				configuration.passenger_offset_y = [10,10,10,2,2,2,-6,-6,-6,-14,-14,-14,-22,-22,-22,-30,-30,-30];
-				configuration.pilot_x = 0;
-				configuration.pilot_y = 22;
-				break;
-		}
-		return configuration;
-	}
 
 	function autoPilot(){
 
@@ -144,7 +116,7 @@
 		}
 		else{
 			for(var c = 0; c < cargo.length; c++){
-				if(targetFound == false){
+				if(targetFound == false && cargo[c].x > 30 && cargo[c].x < (fieldwidth-30) && cargo[c].y > 30 && cargo[c].y < (fieldheight-30) ){
 					target = {x: cargo[c].x, y:cargo[c].y};
 					min_distance = Math.sqrt(Math.pow(pos_x - cargo[c].x,2)+Math.pow(pos_y - cargo[c].y,2));
 					targetFound = true;
@@ -161,6 +133,18 @@
 		if(targetFound){
 			autoPilotGoToTarget();
 		}
+		if(skillpoints > 0) {
+			if (taxilevel < taxilevel_max) {
+				taxilevel++;
+
+				taxiConfig = getTaxiConfig(taxilevel);
+				max_passengers = getTaxiConfig(taxilevel).max_passengers;
+				taxiWidth = getTaxiConfig(taxilevel).taxiWidth;
+				taxiHeight = getTaxiConfig(taxilevel).taxiHeight;
+
+				skillpoints--;
+			}
+		}
 
 	}
 
@@ -168,7 +152,7 @@
 
 		var crossProduct = Math.sin(direction) * (pos_y - target.y) - ( Math.cos(direction) * (pos_x - target.x)  );
 		//console.log("direction: " + direction + " target: " + target.x + "/" + target.y + " cross: " + crossProduct);
-		if (Math.abs(crossProduct) > 10) {
+		if (Math.abs(crossProduct) > 1) {
 
 			if (crossProduct > 0) {
 
@@ -231,20 +215,22 @@
 		time = now;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-		ctx.save();
-		ctx.translate(-field_x,-field_y);
+
 
 		drawBase();
 		drawTaxi();
 		drawScore();
 		drawCargo();
 		drawTaxis();
+		drawExperienceBar();
+		drawSkills();
 
-
+		ctx.save();
+		ctx.translate(-field_x,-field_y);
 		ctx.beginPath();
-		ctx.lineWidth="5";
+		ctx.lineWidth="6";
 		ctx.strokeStyle="black";
-		ctx.rect(0,0, fieldwidth, fieldheight);
+		ctx.rect(3,3, fieldwidth-6, fieldheight-6);
 		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
@@ -262,6 +248,8 @@
 				speed:speed,leftPressed:leftPressed,rightPressed:rightPressed,
 				passengers:passengers});
 		}
+
+		logger();
 
 	}
 
@@ -298,6 +286,7 @@
 			ctx.restore();
 		}
 
+		/*
 		if (pos_y + min_viewdistance > field_y + canvas.height) {
 			field_y = field_y + ((pos_y + min_viewdistance) - (field_y + canvas.height));
 		}
@@ -307,9 +296,9 @@
 		if (field_y < 0) {
 			field_y = 0;
 		}
-		if (field_y + canvas.height > fieldheight) {
-			field_y = fieldheight - canvas.height
-		}
+		//if (field_y + canvas.height > fieldheight) {
+		//	field_y = fieldheight - canvas.height
+		//}
 		if (pos_x + min_viewdistance > field_x + canvas.width) {
 			field_x = field_x + ((pos_x + min_viewdistance) - (field_x + canvas.width));
 		}
@@ -319,9 +308,10 @@
 		if (field_x < 0) {
 			field_x = 0;
 		}
-		if (field_x + canvas.width > fieldwidth) {
-			field_x = fieldwidth - canvas.width
-		}
+		//if (field_x + canvas.width > fieldwidth) {
+		//	field_x = fieldwidth - canvas.width
+		//}
+		*/
 	}
 
 	function drawTaxis(){
@@ -373,15 +363,121 @@
 
 	function drawScore(){
 		ctx.font = "20px Arial";
-		ctx.fillText("Highscore: " + highscore_name + ": " + highscore ,200,20);
+		ctx.fillStyle = "black";
+		ctx.fillText("Highscore: " + highscore_name + ": " + highscore ,canvas.width-300,24);
+		ctx.fillText("Score: " + points,canvas.width-300,49);
 	}
 
 	function drawBase(){
+		ctx.save();
+		ctx.translate(-field_x,-field_y);
 		ctx.beginPath();
 		ctx.rect(base.x-base.radius, base.y-base.radius, base.radius*2, base.radius*2);
 		ctx.fillStyle = "green";
 		ctx.fill();
 		ctx.closePath();
+		ctx.restore();
+	}
+
+	function drawExperienceBar(){
+
+		ctx.save();
+		//ctx.translate(-field_x,-field_y);
+
+		ctx.beginPath();
+		ctx.lineWidth="2";
+		ctx.strokeStyle="black";
+		ctx.rect(canvas.width/2-50, canvas.height-40,100,12);
+		ctx.stroke();
+		ctx.closePath();
+		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width/2-48, canvas.height-38, (experience/getExperience(level))*98,8 );
+		ctx.fillStyle = "yellow";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.font = "15px Arial";
+		ctx.fillStyle = "black";
+		ctx.fillText("Level: " + level, canvas.width/2-30,canvas.height-46);
+
+
+	}
+
+	function drawSkills(){
+
+		var barHeight = 8;
+		var frameHeight = 12;
+		var frameWidth = 100;
+		var barWidth = 96;
+		var distance_font = 4;
+		var offset_width = 150;
+		var border = 2;
+		var offsetHeight = 40;
+		var heightdifference = 33;
+		
+		ctx.save();
+		//ctx.translate(-field_x,-field_y);
+
+		ctx.beginPath();
+		ctx.lineWidth="2";
+		ctx.strokeStyle="black";
+		ctx.rect(canvas.width-offset_width, canvas.height-offsetHeight,frameWidth,frameHeight);
+		ctx.stroke();
+		ctx.closePath();
+		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight+border, ((handlingLevel)/handlingLevel_max)*barWidth,barHeight );
+		ctx.fillStyle = "yellow";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.font = "15px Arial";
+		ctx.fillStyle = "black";
+		ctx.fillText("Handling: " + handlingLevel, canvas.width-offset_width,canvas.height-offsetHeight - distance_font);
+
+		ctx.beginPath();
+		ctx.lineWidth="2";
+		ctx.strokeStyle="black";
+		ctx.rect(canvas.width-offset_width, canvas.height- offsetHeight - heightdifference, frameWidth,frameHeight);
+		ctx.stroke();
+		ctx.closePath();
+		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference + border , ((brakelevel)/brakelevel_max)*barWidth,barHeight );
+		ctx.fillStyle = "yellow";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.font = "15px Arial";
+		ctx.fillStyle = "black";
+		ctx.fillText("Brakes: " + brakelevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference - distance_font);
+
+		ctx.beginPath();
+		ctx.lineWidth="2";
+		ctx.strokeStyle="black";
+		ctx.rect(canvas.width-offset_width, canvas.height- offsetHeight - heightdifference*2, frameWidth,frameHeight);
+		ctx.stroke();
+		ctx.closePath();
+		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference*2 + border , ((taxilevel)/taxilevel_max)*barWidth,barHeight );
+		ctx.fillStyle = "yellow";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.font = "15px Arial";
+		ctx.fillStyle = "black";
+		ctx.fillText("Taxi: " + taxilevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*2 - distance_font);
+
+		ctx.font = "20px Arial";
+		ctx.fillStyle = "black";
+		ctx.fillText("Skillpoints: " + skillpoints, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*2 - distance_font - 22);
+
 	}
 
 	function act(){
@@ -419,10 +515,24 @@
 
 		if (now - spawnTime > 1000) {
 
-			if(speed < max_speed){
+
+			if(breaking && breaking_power > 0){
+				speed = speed - (Math.min(breaking_power, decelaration ))*dt;
+				speed = Math.max(0,speed);
+				breaking_power = breaking_power - (Math.min(breaking_power, decelaration))*dt;
+			}
+
+			if(speed < max_speed ){
 				speed = speed + (acceleration*dt);
 				if(speed > max_speed){
 					speed = max_speed;
+				}
+			}
+
+			if( breaking_power < breaking_power_max){
+				breaking_power += (breaking_reload*dt);
+				if(breaking_power > breaking_power_max){
+					breaking_power = breaking_power_max;
 				}
 			}
 
@@ -454,62 +564,6 @@
 		}
 	}
 
-	function upgradeTaxi() {
-		switch(taxisize){
-			case 0:
-				max_passengers = max_passengers + 1;
-				taxiWidth = taxiWidth * 2;
-				taxisize++;
-				break;
-			case 1:
-				max_passengers = max_passengers + 1;
-				taxisize++;
-				break;
-			case 2:
-				max_passengers++;
-				taxisize++;
-				taxiHeight = taxiHeight+10;
-				break;
-			case 3:
-				max_passengers++;
-				taxisize++;
-				break;
-			case 4:
-				max_passengers++;
-				taxisize++;
-				break;
-			case 5:
-				max_passengers++;
-				taxisize++;
-				taxiHeight = taxiHeight+10;
-				break;
-			case 6:
-				max_passengers++;
-				taxisize++;
-				break;
-			case 7:
-				max_passengers++;
-				taxisize++;
-				break;
-			case 8:
-				max_passengers++;
-				taxisize++;
-				taxiHeight = taxiHeight+10;
-				break;
-			case 9:
-				max_passengers++;
-				taxisize++;
-				break;
-			case 10:
-				max_passengers++;
-				taxisize++;
-				break;
-		}
-
-		taxiConfig = getTaxiConfig(taxisize);
-
-	}
-
 	function reset(){
 
 		pos_x = Math.floor((Math.random() * canvas.width-80) + 40);
@@ -518,17 +572,35 @@
 		field_x = 0;
 		field_y = 0;
 
-		taxisize = 0;
-		taxiWidth = 15;
-		taxiHeight = 30;
+
 		passengers = 0;
-		max_passengers = 1;
+
 		direction = 0; // -PI to +Pi
 		speed = 0;
 		max_speed = 180;
-		turningSpeed = 3;
+
+		taxilevel = 0;
+		max_passengers = getTaxiConfig(taxilevel).max_passengers;
+		taxiWidth = getTaxiConfig(taxilevel).taxiWidth;
+		taxiHeight = getTaxiConfig(taxilevel).taxiHeight;
+		taxisize = 0
+
+		handlingLevel = 0;
+		turningSpeed = getHandling(handlingLevel);
 		points = 0;
 		spawnTime = Date.now();
+
+		brakelevel = 0;
+		decelaration = (getBrakeConfig(brakelevel)).decelaration;
+		breaking_power_max = (getBrakeConfig(brakelevel)).breaking_power_max;
+		breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
+		breaking_power = 200;
+		breaking = false;
+
+
+		level = 0;
+		experience = 0;
+		skillpoints = 0;
 
 		taxiConfig = getTaxiConfig(taxisize);
 
@@ -555,7 +627,6 @@
 	function addCargo(){
 		if( passengers < max_passengers){
 			passengers = passengers + 1;
-			points = points +1;
 			return true;
 		}
 		return false;
@@ -566,13 +637,145 @@
 		if(pos_x < base.x + base.radius && pos_x > base.x - base.radius ){
 			if(pos_y < base.y + base.radius && pos_y > base.y - base.radius ) {
 				max_speed = max_speed + speed_gain * passengers;
+				points = points + passengers;
+				experience += passengers;
+				while( experience >= getExperience(level)){
+					experience -= getExperience(level);
+					level++;
+					skillpoints++;
+				}
 				if (passengers > 0) {
-					upgradeTaxi();
+					//upgradeTaxi();
 				}
 				passengers = 0;
 			}
 		}
 
+	}
+
+	function getExperience(level){
+		switch(level){
+			case 0:
+				return 1;
+			case 1:
+				return 2;
+			case 2:
+				return 3;
+		}
+		return 5;
+	}
+
+	function getBrakeConfig(brakelevel){
+		switch(brakelevel){
+			case 0:
+				return { decelaration:50 , breaking_power_max: 200, breaking_reload: 10};
+			case 1:
+				return { decelaration:70 , breaking_power_max: 220, breaking_reload: 15};
+			case 2:
+				return { decelaration:90 , breaking_power_max: 240, breaking_reload: 18};
+			case 3:
+				return { decelaration:110 , breaking_power_max: 260, breaking_reload: 20};
+			case 4:
+				return { decelaration:130 , breaking_power_max: 280, breaking_reload: 22};
+			case 5:
+				return { decelaration:180 , breaking_power_max: 300, breaking_reload: 24};
+		}
+		return { decelaration:50 , breaking_power_max: 200, breaking_reload: 10};
+	}
+
+	function getHandling(handlingLevel){
+		switch(handlingLevel){
+			case 0:
+				return 3;
+			case 1:
+				return 3.5;
+			case 2:
+				return 4;
+			case 3:
+				return 4.5;
+			case 4:
+				return 5;
+			case 5:
+				return 5.5;
+		}
+		return 3;
+	}
+
+	function getTaxiConfig(taxilevel){
+		var configuration = {	passenger_offset_x:[],
+			passenger_offset_y:[],
+			pilot_x:0, pilot_y:0,
+			max_passengers:1, taxiWidth:15,
+			taxiHeight:30
+		};
+		switch(taxilevel){
+			case 0:
+				configuration.passenger_offset_x = [0];
+				configuration.passenger_offset_y = [-4];
+				configuration.pilot_x = 0;
+				configuration.pilot_y = 4;
+				break;
+			case 1:
+				configuration.passenger_offset_x = [-3,3];
+				configuration.passenger_offset_y = [-4,-4];
+				configuration.pilot_x = 0;
+				configuration.pilot_y = 4;
+				configuration.max_passengers = 2;
+				configuration.taxiWidth = 20;
+				configuration.taxiHeight = 30;
+				break;
+			case 2:
+				configuration.passenger_offset_x = [-3,3,-3,3];
+				configuration.passenger_offset_y = [0,0,-8,-8];
+				configuration.pilot_x = 0;
+				configuration.pilot_y = 8;
+				configuration.max_passengers = 4;
+				configuration.taxiWidth = 20;
+				configuration.taxiHeight = 35;
+				break;
+			case 3:
+				configuration.passenger_offset_x = [-3,3,-3,3,-3,3];
+				configuration.passenger_offset_y = [3,3,-5,-5,-13,-13];
+				configuration.pilot_x = 0;
+				configuration.pilot_y = 13;
+				configuration.max_passengers = 6;
+				configuration.taxiWidth = 22;
+				configuration.taxiHeight = 40;
+				break;
+			case 4:
+				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6];
+				configuration.passenger_offset_y = [3,3,3,-5,-5,-5,-13,-13,-13];
+				configuration.pilot_x = 0;
+				configuration.pilot_y = 13;
+				configuration.max_passengers = 9;
+				configuration.taxiWidth = 30;
+				configuration.taxiHeight = 40;
+				break;
+			case 5:
+				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
+				configuration.passenger_offset_y = [8,8,8,0,0,0,-8,-8,-8,-16,-16,-16];
+				configuration.pilot_x = 0;
+				configuration.pilot_y = 18;
+				configuration.max_passengers = 12;
+				configuration.taxiWidth = 30;
+				configuration.taxiHeight = 50;
+				break;
+			case 6:
+				configuration.passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6,0,6,-6];
+				configuration.passenger_offset_y = [13,13,13,5,5,5,-3,-3,-3,-11,-11,-11,-19,-19,-19];
+				configuration.pilot_x = 0;
+				configuration.pilot_y = 23;
+				configuration.max_passengers = 15;
+				configuration.taxiWidth = 33;
+				configuration.taxiHeight = 60;
+				break;
+			case 7:
+			case 8:
+			case 9:
+			case 10:
+			case 11:
+		}
+		return configuration;
 	}
 
 	function keyDownHandler(e) {
@@ -588,6 +791,45 @@
 		else if(e.keyCode == 70) {
 			autoPilotturningSpeed++;
 		}
+		else if(e.keyCode == 49) {
+			if(skillpoints > 0) {
+				if (handlingLevel < handlingLevel_max) {
+					handlingLevel++;
+					turningSpeed = getHandling(handlingLevel);
+					skillpoints--;
+				}
+			}
+		}
+		else if(e.keyCode == 50) {
+			if(skillpoints > 0) {
+				if (brakelevel < brakelevel_max) {
+					brakelevel++;
+
+					decelaration = (getBrakeConfig(brakelevel)).decelaration;
+					breaking_power_max = (getBrakeConfig(brakelevel)).breaking_power_max;
+					breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
+
+					skillpoints--;
+				}
+			}
+		}
+		else if(e.keyCode == 51) {
+			if(skillpoints > 0) {
+				if (taxilevel < taxilevel_max) {
+					taxilevel++;
+
+					taxiConfig = getTaxiConfig(taxilevel);
+					max_passengers = getTaxiConfig(taxilevel).max_passengers;
+					taxiWidth = getTaxiConfig(taxilevel).taxiWidth;
+					taxiHeight = getTaxiConfig(taxilevel).taxiHeight;
+
+					skillpoints--;
+				}
+			}
+		}
+		else if(e.keyCode == 40) {
+			breaking = true;
+		}
 		console.log("key: " + e.keyCode);
 	}
 
@@ -598,6 +840,19 @@
 		else if(e.keyCode == 37) {
 			leftPressed = false;
 		}
+		else if(e.keyCode == 40) {
+			breaking = false;
+		}
+	}
+
+	function logger(){
+
+		if(now - lastLogged > logInterval ){
+			lastLogged = now;
+			//console.log("field: " +field_x+"/" + field_y);
+			//console.log("window: " +window.innerWidth+"/" + window.innerHeight);
+		}
+
 	}
 
 	function collisionDetection(){
