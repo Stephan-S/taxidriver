@@ -131,7 +131,9 @@ function sendTaxiData(){
 
 var fieldwidth = 2000;
 var fieldheight = 1000;
-var chunksize = 300;
+var chunksize = 400;
+var streetsize = 60;
+var bordersize = 120;
 
 /*
  * generates a rectangle house
@@ -140,65 +142,65 @@ var chunksize = 300;
  */
 function generateRectHouse(x,y) {
 	house = [{
-		'x': x+60+Math.random()*20,
-		'y': y+60+Math.random()*20
+		'x': x+streetsize+Math.random()*20,
+		'y': y+streetsize+Math.random()*20
 	},
 	{
-		'x': x+(chunksize-60)+Math.random()*20,
-		'y': y+60+Math.random()*20
+		'x': x+(chunksize-streetsize)+Math.random()*20,
+		'y': y+streetsize+Math.random()*20
 	},
 	{
-		'x': x+(chunksize-60)+Math.random()*20,
-		'y': y+(chunksize-60)+Math.random()*20
+		'x': x+(chunksize-streetsize)+Math.random()*20,
+		'y': y+(chunksize-streetsize)+Math.random()*20
 	},
 	{
-		'x': x+60+Math.random()*20,
-		'y': y+(chunksize-60)+Math.random()*20
+		'x': x+streetsize+Math.random()*20,
+		'y': y+(chunksize-streetsize)+Math.random()*20
 	}];
 	houses.push(house);
 }
 function generateTriangleHouse(x,y){
 	house = [{
-		'x': x+60+Math.random()*20,
-		'y': y+60+Math.random()*20
+		'x': x+60+Math.random()*(chunksize-streetsize*2),
+		'y': y+60+Math.random()*chunksize/10
 	},
 	{
-		'x': x+(chunksize-60)+Math.random()*20,
-		'y': y+60+Math.random()*20
+		'x': x+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3,
+		'y': y+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3
 	},
 	{
-		'x': x+60+Math.random()*20,
-		'y': y+(chunksize-60)+Math.random()*20
+		'x': x+streetsize+Math.random()*(chunksize-streetsize)/3,
+		'y': y+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3
 	}];
 	houses.push(house);
 }
 
 function generateDoubleTriangleHouse(x,y){
 	house = [{
-		'x': x+(chunksize-60)+Math.random()*20,
-		'y': y+100+Math.random()*20
+		'x': x+(chunksize-streetsize)+Math.random()*20,
+		'y': y+streetsize*2+Math.random()*20
 	},
 	{
-		'x': x+100+Math.random()*10,
-		'y': y+(chunksize-60)+Math.random()*10
+		'x': x+streetsize*2+Math.random()*10,
+		'y': y+(chunksize-streetsize)+Math.random()*10
 	},
 	{
-		'x': x+(chunksize-60)+Math.random()*10,
-		'y': y+(chunksize-60)+Math.random()*10
+		'x': x+(chunksize-streetsize)+Math.random()*10,
+		'y': y+(chunksize-streetsize)+Math.random()*10
 	}]
 	houses.push(house);
 	house = [
 	{
-		'x': x+60+Math.random()*10,
-		'y': y+60+Math.random()*10
+		'x': x+streetsize+Math.random()*10,
+		'y': y+streetsize+Math.random()*10
 	},
 	{
-		'x': x+(chunksize-100)+Math.random()*10,
-		'y': y+60+Math.random()*10
+		'x': x+(chunksize-streetsize*2)+Math.random()*10,
+		'y': y+streetsize+Math.random()*10
 	},
 	{
-		'x': x+60+Math.random()*20,
-		'y': y+(chunksize-100)+Math.random()*20
+		'x': x+streetsize+Math.random()*20,
+		'y': y+(chunksize-streetsize*2)+Math.random()*20
 	}];
 	houses.push(house);
 }
@@ -207,22 +209,23 @@ function generateHouses() {
 	
 	var maxHouses_x = Math.floor(fieldwidth/chunksize);
 	var maxHouses_y = Math.floor(fieldwidth/chunksize);
-	for(var x=0;x<maxHouses_x;x++){
-		for(var y=0;y<maxHouses_y;y++){
+
+	for(var x=bordersize;x<(fieldwidth-bordersize);x+=chunksize){
+		for(var y=bordersize;y<(fieldwidth-bordersize);y+=chunksize){
 			var housetype=Math.floor(Math.random()*3);
 			var house = []
 			switch(housetype){
 				case 0:
-					generateRectHouse(x*chunksize,y*chunksize);
+					generateRectHouse(x,y);
 					break;
 				case 1:
-					generateTriangleHouse(x*chunksize,y*chunksize);
+					generateTriangleHouse(x,y);
 					break;
 				case 2:
-					generateDoubleTriangleHouse(x*chunksize,y*chunksize); 
+					generateDoubleTriangleHouse(x,y); 
 					break;
 				default:
-					generateRectHouse(x*chunksize,y*chunksize);
+					generateRectHouse(x,y);
 			}
 		}
 	}
@@ -235,12 +238,13 @@ function generateCargo() {
     lastCargo = now;
 
     if(cargo.length<45) {
-
-      cargo[cargo.length] = {
-        x: (Math.floor((Math.random() * (fieldwidth - 30)) + 15)),
-        y: (Math.floor((Math.random() * (fieldheight - 30)) + 15))
-      };
-
+    	new_cargo = {
+    	        x: (Math.floor((Math.random() * (fieldwidth - 30)) + 15)),
+    	        y: (Math.floor((Math.random() * (fieldheight - 30)) + 15))
+    	      };
+    	
+    	
+      cargo[cargo.length] = new_cargo;
       //console.log('generated cargo');
 
       //console.log('send cargo');
@@ -248,3 +252,4 @@ function generateCargo() {
     io.emit('data', cargo);
   }
 }
+
