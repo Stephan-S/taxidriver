@@ -210,8 +210,8 @@ function generateHouses() {
 	var maxHouses_x = Math.floor(fieldwidth/chunksize);
 	var maxHouses_y = Math.floor(fieldwidth/chunksize);
 
-	for(var x=bordersize;x<(fieldwidth-bordersize);x+=chunksize){
-		for(var y=bordersize;y<(fieldwidth-bordersize);y+=chunksize){
+	for(var x=bordersize;x<(fieldwidth-bordersize-chunksize);x+=chunksize){
+		for(var y=bordersize;y<(fieldwidth-bordersize-chunksize);y+=chunksize){
 			var housetype=Math.floor(Math.random()*3);
 			var house = []
 			switch(housetype){
