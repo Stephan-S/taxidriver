@@ -49,13 +49,13 @@
 	var pos_x = Math.floor((Math.random() * canvas.width-100) + 50);
 	var pos_y = Math.floor((Math.random() * canvas.height-100) + 50);
 	var points = 0;
-	var min_viewdistance = 250;
+	var min_viewdistance = 500;
 	var highscore = 0;
 	var highscore_name = "NoOne";
 	var name = "Player1";
 	var myID = Math.floor((Math.random() * 1000)) + 1;
-	var fieldwidth = ctx.canvas.width;
-	var fieldheight = ctx.canvas.height;
+	var fieldwidth = 2000;
+	var fieldheight = 1000;
 	var field_x = 0;
 	var field_y = 0;
 	var connected = false;
@@ -103,8 +103,6 @@
 
 	document.addEventListener("keydown", keyDownHandler, false);
 	document.addEventListener("keyup", keyUpHandler, false);
-
-
 
 	function autoPilot(){
 
@@ -183,6 +181,9 @@
 	function visualizeAngles(){
 		//console.log("Visualizing Direction Angle");
 
+		ctx.save();
+		ctx.translate(-field_x,-field_y);
+
 		ctx.beginPath();
 		ctx.lineWidth="5";
 		ctx.strokeStyle = "orange";
@@ -190,7 +191,6 @@
 		ctx.lineTo(pos_x + Math.sin(direction)*30, pos_y + Math.cos(direction)*30 );
 		ctx.stroke();
 		ctx.closePath();
-		ctx.restore();
 
 		ctx.beginPath();
 		ctx.lineWidth="5";
@@ -199,6 +199,7 @@
 		ctx.lineTo(pos_x + Math.sin(Math.atan2(target.x - pos_x,target.y-pos_y))*30, pos_y + Math.cos(Math.atan2(target.x-pos_x, target.y -pos_y))*30 );
 		ctx.stroke();
 		ctx.closePath();
+
 		ctx.restore();
 
 	}
@@ -259,12 +260,14 @@
 
 		ctx.save();
 		ctx.translate(pos_x, pos_y);
+		ctx.translate(-field_x,-field_y);
 		ctx.rotate(-direction);
 		ctx.fillStyle = "blue";
 		ctx.fillRect(-taxiWidth / 2, -taxiHeight / 2, taxiWidth, taxiHeight);
 		ctx.restore();
 
 		ctx.save();
+		ctx.translate(-field_x,-field_y);
 		ctx.translate(pos_x, pos_y);
 		ctx.rotate(-direction);
 		ctx.beginPath();
@@ -277,6 +280,7 @@
 		for (var p = 0; p < passengers; p++) {
 			ctx.save();
 			ctx.translate(pos_x, pos_y);
+			ctx.translate(-field_x,-field_y);
 			ctx.rotate(-direction);
 			ctx.beginPath();
 			ctx.fillStyle = "red";
@@ -286,38 +290,40 @@
 			ctx.restore();
 		}
 
-		/*
+
 		if (pos_y + min_viewdistance > field_y + canvas.height) {
 			field_y = field_y + ((pos_y + min_viewdistance) - (field_y + canvas.height));
+			//field_y = field_y + Math.cos(direction)*speed;
 		}
 		if (pos_y - min_viewdistance < field_y) {
 			field_y = field_y - (-(pos_y - min_viewdistance) + (field_y ));
 		}
-		if (field_y < 0) {
-			field_y = 0;
-		}
-		//if (field_y + canvas.height > fieldheight) {
-		//	field_y = fieldheight - canvas.height
+		//if (field_y < 0) {
+		//	field_y = 0;
 		//}
+		if (field_y + canvas.height > fieldheight) {
+			field_y = fieldheight - canvas.height
+		}
 		if (pos_x + min_viewdistance > field_x + canvas.width) {
 			field_x = field_x + ((pos_x + min_viewdistance) - (field_x + canvas.width));
 		}
 		if (pos_x - min_viewdistance < field_x) {
 			field_x = field_x - (-(pos_x - min_viewdistance) + (field_x ));
 		}
-		if (field_x < 0) {
-			field_x = 0;
-		}
+		//if (field_x < 0) {
+		//	field_x = 0;
+		//}
 		//if (field_x + canvas.width > fieldwidth) {
 		//	field_x = fieldwidth - canvas.width
 		//}
-		*/
+
 	}
 
 	function drawTaxis(){
 		for (var t = 0; t < taxis.length; t++) {
 			if(taxis[t].id != myID) {
 				ctx.save();
+				ctx.translate(-field_x,-field_y);
 				ctx.translate(taxis[t].pos_x, taxis[t].pos_y);
 				ctx.rotate(-taxis[t].direction);
 				ctx.fillStyle = "blue";
@@ -326,6 +332,7 @@
 				ctx.restore();
 
 				ctx.save();
+				ctx.translate(-field_x,-field_y);
 				ctx.translate(taxis[t].pos_x, taxis[t].pos_y);
 				ctx.rotate(-taxis[t].direction);
 				ctx.beginPath();
@@ -337,6 +344,7 @@
 
 				for (var p = 0; p < taxis[t].passengers; p++){
 					ctx.save();
+					ctx.translate(-field_x,-field_y);
 					ctx.translate(taxis[t].pos_x,taxis[t].pos_y);
 					ctx.rotate(-taxis[t].direction);
 					ctx.beginPath();
@@ -353,11 +361,14 @@
 
 	function drawCargo() {
 		for(f = 0; f < cargo.length; f++){
+			ctx.save();
 			ctx.beginPath();
+			ctx.translate(-field_x,-field_y);
 			ctx.arc(cargo[f].x, cargo[f].y, 3, 0, Math.PI*2);
 			ctx.fillStyle = "red";
 			ctx.fill();
 			ctx.closePath();
+			ctx.restore();
 		}
 	}
 
@@ -566,8 +577,22 @@
 
 	function reset(){
 
-		pos_x = Math.floor((Math.random() * canvas.width-80) + 40);
-		pos_y = Math.floor((Math.random() * canvas.height-80) + 40);
+		var valid_pos = false;
+		while(!valid_pos){
+
+			pos_x = Math.floor((Math.random() * canvas.width-80) + 40);
+			pos_y = Math.floor((Math.random() * canvas.height-80) + 40);
+
+			for(h=0; h < houses.length; h++){
+
+				var collision = doPolygonsIntersect(mycorners,houses[h]);
+				if(!collision){
+					valid_pos = true;
+				}
+
+			}
+
+		}
 
 		field_x = 0;
 		field_y = 0;
@@ -856,27 +881,28 @@
 	}
 
 	function collisionDetection(){
+
+		var c1 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y+taxiHeight/2],direction);
+		var c2 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y-taxiHeight/2],direction);
+		var c3 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y+taxiHeight/2],direction);
+		var c4 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y-taxiHeight/2],direction);
+		var mycorners = [
+			{ 	x: c1[0],
+				y: c1[1]
+			},
+			{ 	x: c2[0],
+				y: c2[1]
+			},
+			{ 	x: c3[0],
+				y: c3[1]
+			},
+			{ 	x: c4[0],
+				y: c4[1]
+			}
+		];
+
 		for(t=0; t < taxis.length; t++){
 
-			var c1 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y+taxiHeight/2],direction);
-			var c2 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y-taxiHeight/2],direction);
-			var c3 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y+taxiHeight/2],direction);
-			var c4 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y-taxiHeight/2],direction);
-			var mycorners = [
-				{ 	x: c1[0],
-					y: c1[1]
-				},
-				{ 	x: c2[0],
-					y: c2[1]
-				},
-				{ 	x: c3[0],
-					y: c3[1]
-				},
-				{ 	x: c4[0],
-					y: c4[1]
-				}
-			]
-			
 			if(taxis[t].id != myID){				
 
 				var d1 = rotatePoint([taxis[t].pos_x,taxis[t].pos_y], [taxis[t].pos_x+taxis[t].taxiWidth/2, taxis[t].pos_y+taxis[t].taxiHeight/2],taxis[t].direction);
@@ -896,7 +922,7 @@
 					{ 	x: d4[0],
 						y: d4[1]
 					}
-				]
+				];
 
 				var collision = doPolygonsIntersect(mycorners,othercorners);
 				if(collision){
@@ -906,6 +932,15 @@
 			}
 
 		}
+
+		for(h=0; h < houses.length; h++){
+
+			var collision = doPolygonsIntersect(mycorners,houses[h]);
+			if(collision){
+				lost();
+			}
+		}
+
 	}
 
 	function rotatePoint(pivot, point, angle) {
