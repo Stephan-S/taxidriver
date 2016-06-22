@@ -140,20 +140,20 @@ function generateHouses() {
 	for(var x=0;x<maxHouses_x;x++){
 		for(var y=0;y<maxHouses_y;y++){
 			houses[x+maxHouses_x*y] = [{
-				'x': x*chunksize+60,
-				'y': y*chunksize+60
+				'x': x*chunksize+60+Math.random()*20,
+				'y': y*chunksize+60+Math.random()*20
 			},
 			{
-				'x': x*chunksize+(chunksize-60),
-				'y': y*chunksize+60
+				'x': x*chunksize+(chunksize-60)+Math.random()*20,
+				'y': y*chunksize+60+Math.random()*20
 			},
 			{
-				'x': x*chunksize+(chunksize-60),
-				'y': y*chunksize+(chunksize-60)
+				'x': x*chunksize+(chunksize-60)+Math.random()*20,
+				'y': y*chunksize+(chunksize-60)+Math.random()*20
 			},
 			{
-				'x': x*chunksize+60,
-				'y': y*chunksize+(chunksize-60)
+				'x': x*chunksize+60+Math.random()*20,
+				'y': y*chunksize+(chunksize-60)+Math.random()*20
 			}]
 		}
 	}
