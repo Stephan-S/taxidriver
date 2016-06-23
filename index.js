@@ -1,5 +1,7 @@
 var app = require('express')();
 var http = require('http').Server(app);
+var houseFunctions= require('./map_objects/houses');
+var spawnFunctions= require('./map_objects/bases');
 var io = require('socket.io')(http);
 var usercount = 0;
 var highscore = 0;
@@ -17,6 +19,7 @@ io.on('connection', function(socket){
 
   	io.emit('score', {highscore:highscore, name:highscore_name});
 	io.emit('houses', houses);
+	io.emit('bases', bases);
 	io.emit('projectiles', projectiles);
 	
   socket.on('disconnect', function(){
@@ -96,6 +99,8 @@ http.listen(3000, function(){
 var cargo = [];
 var taxis = [];
 var houses = [];
+var bases = [];
+var base_chunks=[];
 var projectiles = [];
 
 
@@ -137,110 +142,61 @@ function sendTaxiData(){
   io.emit("taxis", taxis);
 }
 
-var fieldwidth = 2000;
-var fieldheight = 1000;
+var fieldwidth = 4000;
+var fieldheight = 4000;
 var chunksize = 400;
 var streetsize = 60;
 var bordersize = 120;
+var maxBases = 5;
 
-/*
- * generates a rectangle house
- * param x: x coordinate of the chunk where the house should be created
- * param y: y coordinate of the chunk where the house should be created
- */
-function generateRectHouse(x,y) {
-	house = [{
-		'x': x+streetsize+Math.random()*20,
-		'y': y+streetsize+Math.random()*20
-	},
-	{
-		'x': x+(chunksize-streetsize)+Math.random()*20,
-		'y': y+streetsize+Math.random()*20
-	},
-	{
-		'x': x+(chunksize-streetsize)+Math.random()*20,
-		'y': y+(chunksize-streetsize)+Math.random()*20
-	},
-	{
-		'x': x+streetsize+Math.random()*20,
-		'y': y+(chunksize-streetsize)+Math.random()*20
-	}];
-	houses.push(house);
+
+function generateBaseChunks() {
+	base_chunks = [];
+	maxChunks = Math.floor((fieldwidth-2*bordersize)*(fieldheight-2*bordersize)/chunksize);
+	for(var i=0;i<maxBases;i++) {
+		base_chunks.push(Math.floor(Math.random()*maxChunks));
+	}
 }
 
-function generateTriangleHouse(x,y){
-	house = [{
-		'x': x+60+Math.random()*(chunksize-streetsize*2),
-		'y': y+60+Math.random()*chunksize/10
-	},
-	{
-		'x': x+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3,
-		'y': y+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3
-	},
-	{
-		'x': x+streetsize+Math.random()*(chunksize-streetsize)/3,
-		'y': y+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3
-	}];
-	houses.push(house);
-}
 
-function generateDoubleTriangleHouse(x,y){
-	house = [{
-		'x': x+(chunksize-streetsize)+Math.random()*20,
-		'y': y+streetsize*2+Math.random()*20
-	},
-	{
-		'x': x+streetsize*2+Math.random()*10,
-		'y': y+(chunksize-streetsize)+Math.random()*10
-	},
-	{
-		'x': x+(chunksize-streetsize)+Math.random()*10,
-		'y': y+(chunksize-streetsize)+Math.random()*10
-	}]
-	houses.push(house);
-	house = [
-	{
-		'x': x+streetsize+Math.random()*10,
-		'y': y+streetsize+Math.random()*10
-	},
-	{
-		'x': x+(chunksize-streetsize*2)+Math.random()*10,
-		'y': y+streetsize+Math.random()*10
-	},
-	{
-		'x': x+streetsize+Math.random()*20,
-		'y': y+(chunksize-streetsize*2)+Math.random()*20
-	}];
-	houses.push(house);
-}
-
-function generateHouses() {
-	
-	var maxHouses_x = Math.floor(fieldwidth/chunksize);
-	var maxHouses_y = Math.floor(fieldwidth/chunksize);
-
+function generateWorld() {
+	baseId = 0;
 	for(var x=bordersize;x<(fieldwidth-bordersize-chunksize);x+=chunksize){
-		for(var y=bordersize;y<(fieldwidth-bordersize-chunksize);y+=chunksize){
-			var housetype=Math.floor(Math.random()*3);
-			var house = []
-			switch(housetype){
+		for(var y=bordersize;y<(fieldheight-bordersize-chunksize);y+=chunksize){
+			chunkid=Math.floor(((y-bordersize)+(y-bordersize)*(fieldwidth-bordersize-chunksize))/chunksize);
+			if(chunkid in base_chunks) {
+				var basetype=Math.floor(Math.random()*2);
+				baseId++;
+				switch(basetype){
 				case 0:
-					generateRectHouse(x,y);
+					bases = houseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
 					break;
 				case 1:
-					generateTriangleHouse(x,y);
-					break;
-				case 2:
-					generateDoubleTriangleHouse(x,y); 
+					bases = houseFunctions.generateTriangleBase(bases,x,y,baseId,chunksize,streetsize);
 					break;
 				default:
-					generateRectHouse(x,y);
+					bases = houseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
+				}
+			} else {
+				var housetype=Math.floor(Math.random()*3);
+				switch(housetype){
+					case 0:
+						houses = houseFunctions.generateRectHouse(houses,x,y,chunksize,streetsize);
+						break;
+					case 1:
+						houses = houseFunctions.generateTriangleHouse(houses,x,y,chunksize,streetsize);
+						break;
+					case 2:
+						houses = houseFunctions.generateDoubleTriangleHouse(houses,x,y,chunksize,streetsize); 
+						break;
+					default:
+						houses = houseFunctions.generateRectHouse(houses,x,y,chunksize,streetsize);
+				}
 			}
 		}
 	}
-	houses.splice(0,1);
 }
-generateHouses(); 
+generateWorld();
 
 function generateCargo() {
   if( (now-lastCargo) > 1500){
