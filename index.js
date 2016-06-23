@@ -153,6 +153,7 @@ var maxBases = 5;
 function generateBaseChunks() {
 	base_chunks = [];
 	maxChunks = Math.floor((fieldwidth-2*bordersize)*(fieldheight-2*bordersize)/(chunksize*chunksize));
+	
 	for(var i=0;i<maxBases;i++) {
 		base_chunks.push(Math.floor(Math.random()*maxChunks));
 	}
@@ -171,20 +172,28 @@ function generateWorld() {
 		for(var yId=0;yId<maxChunksY;yId++){
 			y = bordersize + yId*chunksize;
 			chunkid=yId*maxChunksY+xId;
-
-			if(chunkid in base_chunks) {
+			isBase = false;
+			for(var i=0;i<base_chunks.length;i++) {
+				if(chunkid==base_chunks[i]) {
+					isBase=true;
+				}
+			}
+			
+			if(isBase) {
 				var basetype=Math.floor(Math.random()*2);
-				baseId++;
+				
 				switch(basetype){
 				case 0:
-					bases = baseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
+					bases = baseFunctions.generateRectBase(bases,baseId,x,y,chunksize,streetsize);
 					break;
 				case 1:
-					bases = baseFunctions.generateTriangleBase(bases,x,y,baseId,chunksize,streetsize);
+					bases = baseFunctions.generateTriangleBase(bases,baseId,x,y,chunksize,streetsize);
 					break;
 				default:
-					bases = baseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
+					bases = baseFunctions.generateRectBase(bases,baseId,x,y,chunksize,streetsize);
 				}
+
+				baseId++;
 			} else {
 				var housetype=Math.floor(Math.random()*3);
 				switch(housetype){
