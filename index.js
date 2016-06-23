@@ -257,7 +257,7 @@ function generateCargo() {
     	new_cargo = {
     	        x: pos_x,
     	        y: pos_y,
-				color: /Math.floor(Math.random() * (maxBases))
+				color: Math.floor(Math.random() * (maxBases))
     	      };
     	
     	
