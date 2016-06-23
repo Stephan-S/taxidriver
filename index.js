@@ -1,7 +1,7 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var houseFunctions= require('./map_objects/houses');
-var spawnFunctions= require('./map_objects/bases');
+var baseFunctions= require('./map_objects/bases');
 var io = require('socket.io')(http);
 var usercount = 0;
 var highscore = 0;
@@ -152,7 +152,7 @@ var maxBases = 5;
 
 function generateBaseChunks() {
 	base_chunks = [];
-	maxChunks = Math.floor((fieldwidth-2*bordersize)*(fieldheight-2*bordersize)/chunksize);
+	maxChunks = Math.floor((fieldwidth-2*bordersize)*(fieldheight-2*bordersize)/(chunksize*chunksize));
 	for(var i=0;i<maxBases;i++) {
 		base_chunks.push(Math.floor(Math.random()*maxChunks));
 	}
@@ -161,21 +161,29 @@ function generateBaseChunks() {
 
 function generateWorld() {
 	baseId = 0;
-	for(var x=bordersize;x<(fieldwidth-bordersize-chunksize);x+=chunksize){
-		for(var y=bordersize;y<(fieldheight-bordersize-chunksize);y+=chunksize){
-			chunkid=Math.floor(((y-bordersize)+(y-bordersize)*(fieldwidth-bordersize-chunksize))/chunksize);
+	var x = bordersize;
+	var y = bordersize;
+	var maxChunksX = Math.floor((fieldwidth-2*bordersize)/chunksize);
+	var maxChunksY = Math.floor((fieldheight-2*bordersize)/chunksize);
+
+	for(var xId=0;xId<maxChunksX;xId++){
+		x = bordersize + xId*chunksize;
+		for(var yId=0;yId<maxChunksY;yId++){
+			y = bordersize + yId*chunksize;
+			chunkid=yId*maxChunksY+xId;
+
 			if(chunkid in base_chunks) {
 				var basetype=Math.floor(Math.random()*2);
 				baseId++;
 				switch(basetype){
 				case 0:
-					bases = houseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
+					bases = baseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
 					break;
 				case 1:
-					bases = houseFunctions.generateTriangleBase(bases,x,y,baseId,chunksize,streetsize);
+					bases = baseFunctions.generateTriangleBase(bases,x,y,baseId,chunksize,streetsize);
 					break;
 				default:
-					bases = houseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
+					bases = baseFunctions.generateRectBase(bases,x,y,baseId,chunksize,streetsize);
 				}
 			} else {
 				var housetype=Math.floor(Math.random()*3);
@@ -196,13 +204,14 @@ function generateWorld() {
 		}
 	}
 }
+generateBaseChunks();
 generateWorld();
 
 function generateCargo() {
-  if( (now-lastCargo) > 1500){
+  if( (now-lastCargo) > 300){
     lastCargo = now;
 
-    if(cargo.length<45) {
+    if(cargo.length<200) {
 
 		var pos_x = Math.floor((Math.random() * (fieldwidth-40) ) + 20);
 		var pos_y = Math.floor((Math.random() * (fieldheight-40) ) + 20);
@@ -236,7 +245,6 @@ function generateCargo() {
 
 				var collision = doPolygonsIntersect(mycorners,houses[h]);
 				if(collision){
-					console.log("collide with house");
 					valid_pos = false;
 				}
 
