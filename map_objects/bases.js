@@ -6,6 +6,7 @@
 var bases = [];
 
 module.exports = {
+	baseTypes: 4,
 	generateRectBase: function generateRectBase(basesList,color,x,y,chunksize,streetsize) {
 		bases = basesList;
 		base = {
@@ -28,26 +29,178 @@ module.exports = {
 		}]};
 		bases[bases.length]=base;
 		return bases;
-	},	
-	generateTriangleBase: function generateTriangleBase(basesList,color,x,y,chunksize,streetsize){
+	},		
+	generateRectBaseHouseType1: function generateRectBaseHouseType1(basesList,houseList,color,x,y,chunksize,streetsize) {
 		bases = basesList;
+		houses = [];
+		houses = houseList;
 		base = {
 				'color':color,
 				'form':[{
-					'x': x+60+Math.random()*(chunksize-streetsize*2),
-					'y': y+60+Math.random()*chunksize/10
+					'x': x+streetsize,
+					'y': y+streetsize
 				},
 				{
-					'x': x+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3,
-					'y': y+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+streetsize
 				},
 				{
-					'x': x+streetsize+Math.random()*(chunksize-streetsize)/3,
-					'y': y+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3
-				}]
-		};
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+(chunksize-streetsize)
+				},
+				{
+					'x': x+streetsize,
+					'y': y+(chunksize-streetsize)
+		}]};
 		bases[bases.length]=base;
-		return bases;
+		house = [{
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+(chunksize-streetsize)
+				},
+				{
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+(chunksize-streetsize)
+		}];
+		houses[houses.length]=house;
+		building={bases:bases,houses:houses};
+		return building;
+	},
+	generateRectBaseHouseType2: function generateRectBaseHouseType2(basesList,houseList,color,x,y,chunksize,streetsize) {
+		bases = basesList;
+		houses = [];
+		houses = houseList;
+		base = {
+				'color':color,
+				'form':[{
+					'x': x+streetsize,
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+				},
+				{
+					'x': x+streetsize,
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+		}]};
+		bases[bases.length]=base;
+		house = [{
+					'x': x+streetsize,
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+(chunksize-streetsize)
+				},
+				{
+					'x': x+streetsize,
+					'y': y+(chunksize-streetsize)
+		}];
+		houses[houses.length]=house;
+		building={bases:bases,houses:houses};
+		return building;
+	},
+	generateRectBaseHouseType3: function generateRectBaseHouseType3(basesList,houseList,color,x,y,chunksize,streetsize) {
+		bases = basesList;
+		houses = [];
+		houses = houseList;
+		base = {
+				'color':color,
+				'form':[{
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+(chunksize-streetsize)
+				},
+				{
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+(chunksize-streetsize)
+		}]};
+		bases[bases.length]=base;
+		house = [{
+					'x': x+streetsize,
+					'y': y+streetsize
+				},
+				{
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+streetsize
+				},
+				{
+					'x': x+streetsize+(chunksize-streetsize*2)/2,
+					'y': y+(chunksize-streetsize)
+				},
+				{
+					'x': x+streetsize,
+					'y': y+(chunksize-streetsize)
+		}];
+		houses[houses.length]=house;
+		building={bases:bases,houses:houses};
+		return building;
+	},
+	generateRectBaseHouseType4: function generateRectBaseHouseType4(basesList,houseList,color,x,y,chunksize,streetsize) {
+		bases = basesList;
+		houses = [];
+		houses = houseList;
+		base = {
+				'color':color,
+				'form':[{
+					'x': x+streetsize,
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+(chunksize-streetsize)
+				},
+				{
+					'x': x+streetsize,
+					'y': y+(chunksize-streetsize)
+		}]};
+		bases[bases.length]=base;
+		house = [{
+					'x': x+streetsize,
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize
+				},
+				{
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+				},
+				{
+					'x': x+streetsize,
+					'y': y+streetsize+(chunksize-streetsize*2)/2
+		}];
+		houses[houses.length]=house;
+		building={bases:bases,houses:houses};
+		return building;
 	},
 
 }
