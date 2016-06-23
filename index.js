@@ -236,7 +236,7 @@ function generateCargo() {
 
 				var collision = doPolygonsIntersect(mycorners,houses[h]);
 				if(collision){
-					console.log("collide with house");
+					//console.log("collide with house");
 					valid_pos = false;
 				}
 
@@ -248,7 +248,7 @@ function generateCargo() {
     	new_cargo = {
     	        x: pos_x,
     	        y: pos_y,
-				color: Math.floor(Math.random() * (maxBases))
+				color: /Math.floor(Math.random() * (maxBases))
     	      };
     	
     	
