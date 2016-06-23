@@ -66,6 +66,7 @@
 	var spawnTime = now;
 	var lastCargo = now;
 	var lastLogged = now;
+	var lastShot = now;
 	var logInterval = 500;
 	var dt = 0;
 	var cargo = [];
@@ -86,6 +87,7 @@
 	var breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
 	var breaking = false;
 	var max_turning_speed = 8;
+	var projectiles = [];
 
 	ctx.font = "10px Arial";
 
@@ -95,6 +97,10 @@
 
 	socket.on('taxis', function(servertaxis){
 		taxis = servertaxis;
+	});
+
+	socket.on('projectiles', function(serverprojectiles){
+		projectiles = serverprojectiles;
 	});
 
   socket.on('houses', function(serverhouses){
@@ -233,6 +239,7 @@
 		drawTaxis();
 		drawExperienceBar();
 		drawSkills();
+		drawProjectiles();
 
 		ctx.save();
 		ctx.translate(-field_x,-field_y);
@@ -309,9 +316,9 @@
 		//if (field_y < 0) {
 		//	field_y = 0;
 		//}
-		if (field_y + canvas.height > fieldheight) {
-			field_y = fieldheight - canvas.height
-		}
+		//if (field_y + canvas.height > fieldheight) {
+		//	field_y = fieldheight - canvas.height
+		//}
 		if (pos_x + min_viewdistance > field_x + canvas.width) {
 			field_x = field_x + ((pos_x + min_viewdistance) - (field_x + canvas.width));
 		}
@@ -516,12 +523,56 @@
 
 	}
 
+	function drawProjectiles(){
+		for (p = 0; p < projectiles.length; p++){
+
+			ctx.save();
+			ctx.beginPath();
+			ctx.translate(-field_x,-field_y);
+			ctx.arc(projectiles[p].x, projectiles[p].y, 5, 0, Math.PI*2);
+			ctx.fillStyle = "red";
+			ctx.fill();
+			ctx.closePath();
+			ctx.restore();
+
+		}
+	}
+
+	function actProjectiles(){
+		for (p = 0; p < projectiles.length; p++){
+
+			projectiles[p].x = projectiles[p].x + (Math.sin(projectiles[p].direction) * projectiles[p].speed * dt);
+			projectiles[p].y = projectiles[p].y + (Math.cos(projectiles[p].direction) * projectiles[p].speed * dt);
+			projectiles[p].distance = projectiles[p].distance  -  (Math.sqrt(Math.pow(Math.sin(projectiles[p].direction) * projectiles[p].speed * dt,2)
+							+ Math.pow(Math.cos(projectiles[p].direction) * projectiles[p].speed * dt ,2)));
+
+			if( projectiles[p].distance < 0){
+				projectiles.splice(p);
+			}
+
+		}
+	}
+
+	function shootProjectile(){
+
+		p = { 	x: pos_x + Math.sin(direction) * (taxiHeight+10),
+				y: pos_y + Math.cos(direction) * (taxiWidth+10),
+				speed: speed + 300,
+				direction: direction,
+				shooter: myID,
+			    distance: 900
+		};
+		socket.emit("projectile",p);
+
+	}
+
 	function act(){
 		collisionDetection();
 		actTaxi();
 		actTaxis();
 		checkCargoHit();
 		deliverCargo();
+		actProjectiles();
 
 		if(debug) {
 			autoPilot();
@@ -606,6 +657,8 @@
 		var valid_pos = false;
 		while(!valid_pos){
 
+			valid_pos = true;
+
 			pos_x = Math.floor((Math.random() * canvas.width-80) + 40);
 			pos_y = Math.floor((Math.random() * canvas.height-80) + 40);
 
@@ -631,8 +684,8 @@
 			for(h=0; h < houses.length; h++){
 
 				var collision = doPolygonsIntersect(mycorners,houses[h]);
-				if(!collision){
-					valid_pos = true;
+				if(collision){
+					valid_pos = false;
 				}
 
 			}
@@ -900,6 +953,12 @@
 		else if(e.keyCode == 40) {
 			breaking = true;
 		}
+		else if(e.keyCode == 32) {
+			if (now - lastShot > 1000){
+				shootProjectile();
+				lastShot = now;
+			}
+		}
 		console.log("key: " + e.keyCode);
 	}
 
@@ -983,6 +1042,14 @@
 			var collision = doPolygonsIntersect(mycorners,houses[h]);
 			if(collision){
 				lost();
+			}
+		}
+
+		for( p = 0; p < projectiles.length; p++){
+			if( Math.sqrt(Math.pow(projectiles[p].x - pos_x,2) + Math.pow(projectiles[p].y - pos_y,2)) < (2+taxiWidth/2) ) {
+				if (projectiles[p].shooter != myID) {
+					lost();
+				}
 			}
 		}
 
