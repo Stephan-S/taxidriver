@@ -3,11 +3,11 @@
  * param x: x coordinate of the chunk where the house should be created
  * param y: y coordinate of the chunk where the house should be created
  */
-var basis = [];
+var bases = [];
 
 module.exports = {
-	generateRectbase: function generateRectbase(basisList,color,x,y,chunksize,streetsize) {
-		basis = basisList;
+	generateRectBase: function generateRectBase(basesList,color,x,y,chunksize,streetsize) {
+		bases = basesList;
 		base = {
 				'color':color,
 				'form':[{
@@ -26,11 +26,11 @@ module.exports = {
 					'x': x+streetsize+Math.random()*20,
 					'y': y+(chunksize-streetsize)+Math.random()*20
 		}]};
-		basis[basis.length]=base;
-		return basis;
+		bases[bases.length]=base;
+		return bases;
 	},	
-	generateTrianglebase: function generateTrianglebase(basisList,color,x,y,chunksize,streetsize){
-		basis = basisList;
+	generateTriangleBase: function generateTriangleBase(basesList,color,x,y,chunksize,streetsize){
+		bases = basesList;
 		base = {
 				'color':color,
 				'form':[{
@@ -46,8 +46,8 @@ module.exports = {
 					'y': y+(chunksize-streetsize)-Math.random()*(chunksize-streetsize*2)/3
 				}]
 		};
-		basis[basis.length]=base;
-		return basis;
+		bases[bases.length]=base;
+		return bases;
 	},
 
 }
