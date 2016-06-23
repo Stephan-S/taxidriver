@@ -670,7 +670,7 @@
 
 		if (((pos_x + taxiWidth / 2) > fieldwidth) || ((pos_x - taxiWidth / 2) < 0) || ((pos_y + taxiHeight / 2) > fieldheight) || ((pos_y - taxiHeight / 2) < 0)) {
 
-			alert("Gameover. Points: " + points);
+			//alert("Gameover. Points: " + points);
 			//document.location.reload();
 			lost();
 		}
@@ -685,6 +685,7 @@
 					steer_angle = Math.max(steer_angle-1.5*dt,-0.6);
 				}
 				else{
+					/*
 					if(steer_angle > 0) {
 						steer_angle = steer_angle - 1.5*dt;
 						if(steer_angle < 0){
@@ -697,6 +698,8 @@
 							steer_angle = 0;
 						}
 					}
+					*/
+					steer_angle = 0;
 
 				}
 			}
