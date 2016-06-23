@@ -248,11 +248,14 @@ function generateCargo() {
 
     if(cargo.length<45) {
 
-		var pos_x = Math.floor((Math.random() * fieldwidth-40) + 20);
-		var pos_y = Math.floor((Math.random() * fieldheight-40) + 20);
+		var pos_x = Math.floor((Math.random() * (fieldwidth-40) ) + 20);
+		var pos_y = Math.floor((Math.random() * (fieldheight-40) ) + 20);
 		var valid_pos = false;
 		while(!valid_pos){
 			valid_pos = true;
+
+			pos_x = Math.floor((Math.random() * (fieldwidth-40) ) + 20);
+			pos_y = Math.floor((Math.random() * (fieldheight-40)) + 20);
 
 			var c1 = [pos_x + 8, pos_y + 8 ];
 			var c2 = [pos_x + 8, pos_y - 8 ];
@@ -282,14 +285,14 @@ function generateCargo() {
 				}
 
 			}
-			pos_x = Math.floor((Math.random() * fieldwidth-40) + 20);
-			pos_y = Math.floor((Math.random() * fieldheight-40) + 20);
+
 
 		}
 
     	new_cargo = {
     	        x: pos_x,
-    	        y: pos_y
+    	        y: pos_y,
+				color: Math.floor(Math.random() * (max_bases))
     	      };
     	
     	
@@ -391,3 +394,4 @@ function doPolygonsIntersect (a, b) {
 	}
 	return true;
 }
+

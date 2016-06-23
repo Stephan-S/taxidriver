@@ -61,6 +61,7 @@
 	var connected = false;
 	var taxis = [];
 	var houses = [];
+	var passengers = [];
 	var now = Date.now();
 	var time = now;
 	var spawnTime = now;
@@ -298,7 +299,27 @@
 			ctx.translate(-field_x,-field_y);
 			ctx.rotate(-direction);
 			ctx.beginPath();
-			ctx.fillStyle = "red";
+			switch(passengers[p].color){
+				case 0:
+					ctx.fillStyle = "red";
+					break;
+				case 1:
+					ctx.fillStyle = "pink";
+					break;
+				case 2:
+					ctx.fillStyle = "yellow";
+					break;
+				case 3:
+					ctx.fillStyle = "green";
+					break;
+				case 4:
+					ctx.fillStyle = "blue";
+					break;
+				default:
+					ctx.fillStyle = "red";
+					break;
+			}
+			//ctx.fillStyle = "red";
 			ctx.arc(taxiConfig.passenger_offset_x[p], taxiConfig.passenger_offset_y[p], 3, 0, 2 * Math.PI);
 			ctx.fill();
 			ctx.closePath();
@@ -397,7 +418,26 @@
 			ctx.beginPath();
 			ctx.translate(-field_x,-field_y);
 			ctx.arc(cargo[f].x, cargo[f].y, 3, 0, Math.PI*2);
-			ctx.fillStyle = "red";
+			switch(cargo.color){
+				case 0:
+					ctx.fillStyle = "red";
+					break;
+				case 1:
+					ctx.fillStyle = "pink";
+					break;
+				case 2:
+					ctx.fillStyle = "yellow";
+					break;
+				case 3:
+					ctx.fillStyle = "green";
+					break;
+				case 4:
+					ctx.fillStyle = "blue";
+					break;
+				default:
+					ctx.fillStyle = "red";
+					break;
+			}
 			ctx.fill();
 			ctx.closePath();
 			ctx.restore();
@@ -412,13 +452,42 @@
 	}
 
 	function drawBase(){
+
 		ctx.save();
 		ctx.translate(-field_x,-field_y);
-		ctx.beginPath();
-		ctx.rect(base.x-base.radius, base.y-base.radius, base.radius*2, base.radius*2);
-		ctx.fillStyle = "green";
-		ctx.fill();
-		ctx.closePath();
+
+		for(b = 0; b < bases.length; b++){
+			switch(bases[b].color) {
+				case 0:
+					ctx.fillStyle = "red";
+					break;
+				case 1:
+					ctx.fillStyle = "pink";
+					break;
+				case 2:
+					ctx.fillStyle = "yellow";
+					break;
+				case 3:
+					ctx.fillStyle = "green";
+					break;
+				case 4:
+					ctx.fillStyle = "blue";
+					break;
+				default:
+					ctx.fillStyle = "green";
+					break;
+			}
+			ctx.beginPath();
+			ctx.moveTo(bases[b].form[0].x, bases[b].form[0].y);
+			for(dot in bases[b].form){
+				ctx.lineTo(bases[b].form[dot].x, bases[b].form[dot].y);
+			}
+			ctx.lineTo(bases[b].form[0].x, bases[b].form[0].y);
+			ctx.closePath();
+			ctx.fill();
+		}
+
+
 		ctx.restore();
 	}
 
@@ -738,7 +807,7 @@
 		for (var c = 0; c<cargo.length; c++){
 			if (cargo[c].x < pos_x+taxiWidth/2 && cargo[c].x > pos_x - taxiWidth/2){
 				if (cargo[c].y < pos_y+taxiHeight/2 && cargo[c].y > pos_y - taxiHeight/2){
-					if(addCargo()){
+					if(addCargo(c)){
 						cargo.splice(c,1);
 						socket.emit("cargo",c);
 					}
@@ -747,9 +816,10 @@
 		}
 	}
 
-	function addCargo(){
+	function addCargo(c){
 		if( passengers < max_passengers){
 			passengers = passengers + 1;
+			passengers[passengers.length] = cargo[c];
 			return true;
 		}
 		return false;
@@ -757,6 +827,52 @@
 
 	function deliverCargo(){
 
+
+		var c1 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -5), pos_y+((taxiHeight/2) - 5)],direction);
+		var c2 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -5), pos_y-((taxiHeight/2) - 5)],direction);
+		var c3 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -5), pos_y+((taxiHeight/2) - 5)],direction);
+		var c4 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -5), pos_y-((taxiHeight/2) - 5)],direction);
+		var mycorners = [
+			{ 	x: c1[0],
+				y: c1[1]
+			},
+			{ 	x: c2[0],
+				y: c2[1]
+			},
+			{ 	x: c3[0],
+				y: c3[1]
+			},
+			{ 	x: c4[0],
+				y: c4[1]
+			}
+		];
+
+		for(b=0; b < bases.length; b++){
+
+			var collision = doPolygonsIntersect(mycorners,bases[b].form);
+			if(collision){
+				var remove = [];
+				for( p = 0; p < passengers.length; p++){
+
+					if(passengers[p].color == bases[b].color){
+						max_speed = max_speed + speed_gain;
+						points++;
+						experience++;
+						while( experience >= getExperience(level)){
+							experience -= getExperience(level);
+							level++;
+							skillpoints++;
+						}
+						passengers--;
+						remove[remove.length] = p;
+					}
+				}
+				for(r = 0; r < remove.length; r++){
+					passengers.splice(r,1);
+				}
+			}
+		}
+		/*
 		if(pos_x < base.x + base.radius && pos_x > base.x - base.radius ){
 			if(pos_y < base.y + base.radius && pos_y > base.y - base.radius ) {
 				max_speed = max_speed + speed_gain * passengers;
@@ -773,6 +889,7 @@
 				passengers = 0;
 			}
 		}
+		*/
 
 	}
 
@@ -986,10 +1103,10 @@
 
 	function collisionDetection(){
 
-		var c1 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y+taxiHeight/2],direction);
-		var c2 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y-taxiHeight/2],direction);
-		var c3 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y+taxiHeight/2],direction);
-		var c4 = rotatePoint([pos_x,pos_y], [pos_x-taxiWidth/2, pos_y-taxiHeight/2],direction);
+		var c1 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -5), pos_y+((taxiHeight/2) - 5)],direction);
+		var c2 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -5), pos_y-((taxiHeight/2) - 5)],direction);
+		var c3 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -5), pos_y+((taxiHeight/2) - 5)],direction);
+		var c4 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -5), pos_y-((taxiHeight/2) - 5)],direction);
 		var mycorners = [
 			{ 	x: c1[0],
 				y: c1[1]
