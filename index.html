@@ -62,7 +62,7 @@
 	var taxis = [];
 	var houses = [];
 	var bases = [];
-	var passengers = [];
+	var passengersList = [];
 	var now = Date.now();
 	var time = now;
 	var spawnTime = now;
@@ -305,7 +305,7 @@
 			ctx.translate(-field_x,-field_y);
 			ctx.rotate(-direction);
 			ctx.beginPath();
-			switch(passengers[p].color){
+			switch(passengersList[p].color){
 				case 0:
 					ctx.fillStyle = "red";
 					break;
@@ -424,7 +424,7 @@
 			ctx.beginPath();
 			ctx.translate(-field_x,-field_y);
 			ctx.arc(cargo[f].x, cargo[f].y, 3, 0, Math.PI*2);
-			switch(cargo.color){
+			switch(cargo[f].color){
 				case 0:
 					ctx.fillStyle = "red";
 					break;
@@ -772,6 +772,7 @@
 
 
 		passengers = 0;
+        passengersList = [];
 
 		direction = 0; // -PI to +Pi
 		speed = 0;
@@ -825,7 +826,7 @@
 	function addCargo(c){
 		if( passengers < max_passengers){
 			passengers = passengers + 1;
-			passengers[passengers.length] = cargo[c];
+			passengersList[passengersList.length] = cargo[c];
 			return true;
 		}
 		return false;
@@ -858,9 +859,9 @@
 			var collision = doPolygonsIntersect(mycorners,bases[b].form);
 			if(collision){
 				var remove = [];
-				for( p = 0; p < passengers.length; p++){
+				for( p = 0; p < passengersList.length; p++){
 
-					if(passengers[p].color == bases[b].color){
+					if(passengersList[p].color == bases[b].color){
 						max_speed = max_speed + speed_gain;
 						points++;
 						experience++;
@@ -874,7 +875,7 @@
 					}
 				}
 				for(r = 0; r < remove.length; r++){
-					passengers.splice(r,1);
+					passengersList.splice(r,1);
 				}
 			}
 		}
@@ -1082,7 +1083,7 @@
 				lastShot = now;
 			}
 		}
-		console.log("key: " + e.keyCode);
+		//console.log("key: " + e.keyCode);
 	}
 
 	function keyUpHandler(e) {
