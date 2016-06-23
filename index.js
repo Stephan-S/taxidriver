@@ -155,7 +155,19 @@ function generateBaseChunks() {
 	maxChunks = Math.floor((fieldwidth-2*bordersize)*(fieldheight-2*bordersize)/(chunksize*chunksize));
 	
 	for(var i=0;i<maxBases;i++) {
-		base_chunks.push(Math.floor(Math.random()*maxChunks));
+		chunkid = Math.floor(Math.random()*maxChunks);
+		var isBase= false;
+		for(var y=0;y<base_chunks.length;y++) {
+			if(chunkid==base_chunks[i]) {
+				isBase=true;
+			}
+		}
+		if(!isBase) {
+			base_chunks.push(chunkid);
+		} else {
+			i--;
+		}
+		
 	}
 }
 
@@ -180,31 +192,56 @@ function generateWorld() {
 			}
 			
 			if(isBase) {
-				var basetype=Math.floor(Math.random()*2);
+				var basetype=Math.floor(Math.random()*baseFunctions.baseTypes);
 				
 				switch(basetype){
 				case 0:
 					bases = baseFunctions.generateRectBase(bases,baseId,x,y,chunksize,streetsize);
 					break;
 				case 1:
-					bases = baseFunctions.generateTriangleBase(bases,baseId,x,y,chunksize,streetsize);
+					building = baseFunctions.generateRectBaseHouseType1(bases,houses,baseId,x,y,chunksize,streetsize);
+					bases = building.bases;
+					houses = building.houses;
+					break;
+				case 2:
+					building = baseFunctions.generateRectBaseHouseType2(bases,houses,baseId,x,y,chunksize,streetsize);
+					bases = building.bases;
+					houses = building.houses;
+					break;
+				case 3:
+					building = baseFunctions.generateRectBaseHouseType3(bases,houses,baseId,x,y,chunksize,streetsize);
+					bases = building.bases;
+					houses = building.houses;
+					break;
+				case 4:
+					building = baseFunctions.generateRectBaseHouseType4(bases,houses,baseId,x,y,chunksize,streetsize);
+					bases = building.bases;
+					houses = building.houses;
 					break;
 				default:
 					bases = baseFunctions.generateRectBase(bases,baseId,x,y,chunksize,streetsize);
 				}
-
 				baseId++;
 			} else {
-				var housetype=Math.floor(Math.random()*3);
+				var housetype=Math.floor(Math.random()*houseFunctions.houseTypes);
 				switch(housetype){
 					case 0:
 						houses = houseFunctions.generateRectHouse(houses,x,y,chunksize,streetsize);
 						break;
 					case 1:
-						houses = houseFunctions.generateTriangleHouse(houses,x,y,chunksize,streetsize);
+						houses = houseFunctions.generateCrossHouse(houses,x,y,chunksize,streetsize);
 						break;
 					case 2:
-						houses = houseFunctions.generateDoubleTriangleHouse(houses,x,y,chunksize,streetsize); 
+						houses = houseFunctions.generateDoubleHouseType1(houses,x,y,chunksize,streetsize);
+						break;
+					case 3:
+						houses = houseFunctions.generateDoubleHouseType2(houses,x,y,chunksize,streetsize);
+						break;
+					case 4:
+						houses = houseFunctions.generateDoubleTriangleHouseType1(houses,x,y,chunksize,streetsize); 
+						break;
+					case 5:
+						houses = houseFunctions.generateDoubleTriangleHouseType2(houses,x,y,chunksize,streetsize); 
 						break;
 					default:
 						houses = houseFunctions.generateRectHouse(houses,x,y,chunksize,streetsize);
