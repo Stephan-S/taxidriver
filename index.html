@@ -35,11 +35,8 @@
 	var passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
 	var passenger_offset_y = [-4,-4,-4,-12,-12,-12,-20,-20,-20,-28,-28,-28];
 	var taxiConfig = getTaxiConfig(taxisize);
-	var direction = 0; // -PI to +Pi
-	var speed = 0;
-	var max_speed = 180;
-	var acceleration = 30;
-	var speed_gain = 10;
+
+
 	var handlingLevel = 0;
 	var handlingLevel_max = 5;
 	var taxilevel = 0;
@@ -90,6 +87,16 @@
 	var breaking = false;
 	var max_turning_speed = 8;
 	var projectiles = [];
+
+	var velocity = {x: 0, y:0, value: function () {return Math.sqrt(Math.pow(this.x,2)+Math.pow(this.y,2))} };
+	var steer_angle = 0;
+	var steer_factor = 3;
+	var direction = 0; // -PI to +Pi
+	var speed = 0;
+	var max_speed = 180;
+	var acceleration = 30;
+	var speed_gain = 10;
+	
 
 	ctx.font = "10px Arial";
 
@@ -655,42 +662,63 @@
 		}
 	}
 
+
 	function actTaxi(){
+		//console.log("pos: " + pos_x + "/" +pos_y + "  velocity: " +velocity.x + "/" + velocity.y);
+		//console.log("velocity.value: " + Math.sqrt( Math.pow(velocity.x,2) + Math.pow(velocity.y,2)));
+		//console.log("steering_angle: " + steer_angle);
+
 		if (((pos_x + taxiWidth / 2) > fieldwidth) || ((pos_x - taxiWidth / 2) < 0) || ((pos_y + taxiHeight / 2) > fieldheight) || ((pos_y - taxiHeight / 2) < 0)) {
 
-			//alert("Gameover. Points: " + points);
+			alert("Gameover. Points: " + points);
 			//document.location.reload();
 			lost();
 		}
 
-
-		if (leftPressed){
-			direction = (((direction+(turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
-		}
-		if (rightPressed){
-			if( (direction-(0.5*dt)) < (-Math.PI) ){
-				direction = (direction-(turningSpeed*dt))+2*Math.PI;
-			}
-			else{
-				direction = (((direction-(turningSpeed*dt))+Math.PI)%(2*Math.PI))-Math.PI;
-			}
-		}
-
 		if (now - spawnTime > 1000) {
 
-
-			if(breaking && breaking_power > 0){
-				speed = speed - (Math.min(breaking_power, decelaration ))*dt;
-				speed = Math.max(0,speed);
-				breaking_power = breaking_power - (Math.min(breaking_power, decelaration))*dt;
+			if (leftPressed){
+				steer_angle = Math.min(steer_angle+1.5*dt,0.6);
 			}
+			else {
+				if (rightPressed){
+					steer_angle = Math.max(steer_angle-1.5*dt,-0.6);
+				}
+				else{
+					if(steer_angle > 0) {
+						steer_angle = steer_angle - 1.5*dt;
+						if(steer_angle < 0){
+							steer_angle = 0;
+						}
+					}
+					if(steer_angle < 0) {
+						steer_angle = steer_angle + 1.5*dt;
+						if(steer_angle > 0){
+							steer_angle = 0;
+						}
+					}
 
-			if(speed < max_speed ){
-				speed = speed + (acceleration*dt);
-				if(speed > max_speed){
-					speed = max_speed;
 				}
 			}
+			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
+
+			var frontWheel = {x: pos_x + (taxiHeight/2) * Math.sin(direction),
+							y: pos_y + (taxiHeight/2) * Math.cos(direction)};
+			var backWheel = {x: pos_x - (taxiHeight/2) * Math.sin(direction),
+				y: pos_y - (taxiHeight/2) * Math.cos(direction)};
+
+			console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
+
+
+			frontWheel.x = frontWheel.x + speed * dt * Math.sin(direction+steer_angle);
+			frontWheel.y = frontWheel.y + speed * dt * Math.cos(direction+steer_angle);
+			backWheel.x =  backWheel.x + speed * dt * Math.sin(direction);
+			backWheel.y = backWheel.y + speed * dt * Math.cos(direction);
+
+			pos_x = (frontWheel.x + backWheel.x)/2;
+			pos_y = (frontWheel.y + backWheel.y)/2;
+
+			direction = Math.atan2((frontWheel.x-backWheel.x),(frontWheel.y-backWheel.y));
 
 			if( breaking_power < breaking_power_max){
 				breaking_power += (breaking_reload*dt);
@@ -699,9 +727,11 @@
 				}
 			}
 
+			if ( speed < max_speed){
+				speed = speed + acceleration*dt;
+			}
 
-			pos_x = pos_x + Math.sin(direction) * dt * speed;
-			pos_y = pos_y + Math.cos(direction) * dt * speed;
+
 
 		}
 	}
@@ -803,6 +833,10 @@
 		skillpoints = 0;
 
 		taxiConfig = getTaxiConfig(taxisize);
+
+		velocity.x = 0;
+		velocity.y = 0;
+		steer_angle = 0;
 
 	}
 
