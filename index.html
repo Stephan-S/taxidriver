@@ -623,7 +623,7 @@
 							+ Math.pow(Math.cos(projectiles[p].direction) * projectiles[p].speed * dt ,2)));
 
 			if( projectiles[p].distance < 0){
-				projectiles.splice(p);
+				projectiles.splice(p,1);
 			}
 
 		}
