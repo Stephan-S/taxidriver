@@ -205,7 +205,64 @@
 
 
 	}
+	
+	function baseArrow(baseNumber){
+		
+		var targetBase = bases[baseNumber];
+		ctx.save();
+		ctx.translate(-field_x,-field_y);
+		
+		ctx.beginPath();
+		ctx.lineWidth="5";
+		switch(targetBase.color) {
+			case 0:
+				ctx.fillStyle = "red";
+				break;
+			case 1:
+				ctx.fillStyle = "pink";
+				break;
+			case 2:
+				ctx.fillStyle = "yellow";
+				break;
+			case 3:
+				ctx.fillStyle = "green";
+				break;
+			case 4:
+				ctx.fillStyle = "blue";
+				break;
+			default:
+				ctx.fillStyle = "green";
+				break;
+		}
+		
+		//Determine Center of base
+		var x=0;
+		var y=0;
+		for(var i = 0;i<targetBase.form.length;i++) {
+			x = x+targetBase.form[i].x;
+			y = y+targetBase.form[i].y;
+		}
+		x=x/targetBase.form.length;
+		y=y/targetBase.form.length;
+		
+		//Determine angle to center
+		var angle = Math.atan2(x-pos_x, y -pos_y);
+		var de
+		
+		ctx.moveTo(pos_x,pos_y);		
+		ctx.moveTo(pos_x + Math.sin(angle)*30, pos_y + Math.cos(angle)*30 );
+		ctx.lineTo(pos_x + 25*Math.sin(angle-Math.PI/12),pos_y + 25*Math.cos(angle-Math.PI/12));
+		ctx.lineTo(pos_x + 25*Math.sin(angle+Math.PI/12),pos_y + 25*Math.cos(angle+Math.PI/12));
+		ctx.lineTo(pos_x + Math.sin(angle)*30, pos_y + Math.cos(angle)*30 );
+		ctx.fill();
+		ctx.strokeStyle('black');
+		ctx.stroke();
+		ctx.closePath();
 
+		ctx.restore();
+	
+
+	}
 	function visualizeAngles(){
 		//console.log("Visualizing Direction Angle");
 
@@ -333,13 +390,15 @@
 					ctx.fillStyle = "red";
 					break;
 			}
+			
 			//ctx.fillStyle = "red";
 			ctx.arc(taxiConfig.passenger_offset_x[p], taxiConfig.passenger_offset_y[p], 3, 0, 2 * Math.PI);
 			ctx.fill();
 			ctx.closePath();
 			ctx.restore();
-		}
 
+			baseArrow(passengersList[p].color);
+		}
 
 		if (pos_y + min_viewdistance > field_y + canvas.height) {
 			field_y = field_y + ((pos_y + min_viewdistance) - (field_y + canvas.height));
@@ -710,7 +769,7 @@
 			var backWheel = {x: pos_x - (taxiHeight/2) * Math.sin(direction),
 				y: pos_y - (taxiHeight/2) * Math.cos(direction)};
 
-			console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
+			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
 
 
 			frontWheel.x = frontWheel.x + speed * dt * Math.sin(direction+steer_angle);

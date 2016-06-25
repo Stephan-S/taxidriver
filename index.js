@@ -148,27 +148,29 @@ var chunksize = 400;
 var streetsize = 60;
 var bordersize = 120;
 var maxBases = 5;
+var randomFaktor = 2;
 
 
 function generateBaseChunks() {
 	base_chunks = [];
-	maxChunks = Math.floor((fieldwidth-2*bordersize)*(fieldheight-2*bordersize)/(chunksize*chunksize));
+	maxChunks = Math.floor((fieldwidth-2*bordersize)/chunksize)*Math.floor((fieldheight-2*bordersize)/chunksize);
 	
 	for(var i=0;i<maxBases;i++) {
 		chunkid = Math.floor(Math.random()*maxChunks);
-		var isBase= false;
+		var isAlreadyBase= false;
 		for(var y=0;y<base_chunks.length;y++) {
 			if(chunkid==base_chunks[i]) {
-				isBase=true;
+				isAlreadyBase=true;
 			}
 		}
-		if(!isBase) {
+		if(!isAlreadyBase) {
 			base_chunks.push(chunkid);
 		} else {
 			i--;
 		}
 		
 	}
+	console.log(base_chunks);
 }
 
 
@@ -190,9 +192,10 @@ function generateWorld() {
 					isBase=true;
 				}
 			}
-			
+
 			if(isBase) {
-				var basetype=Math.floor(Math.random()*baseFunctions.baseTypes);
+				console.log("Generating base.");
+				var basetype=Math.floor(Math.random()*baseFunctions.baseTypes*randomFaktor);
 				
 				switch(basetype){
 				case 0:
@@ -223,7 +226,7 @@ function generateWorld() {
 				}
 				baseId++;
 			} else {
-				var housetype=Math.floor(Math.random()*houseFunctions.houseTypes);
+				var housetype=Math.floor(Math.random()*houseFunctions.houseTypes*randomFaktor);
 				switch(housetype){
 					case 0:
 						houses = houseFunctions.generateRectHouse(houses,x,y,chunksize,streetsize);
