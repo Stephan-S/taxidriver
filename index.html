@@ -460,7 +460,7 @@
 
 	function drawScore(){
 		ctx.font = "20px Arial";
-		ctx.fillStyle = "black";
+		ctx.fillStyle = "grey";
 		ctx.fillText("Highscore: " + highscore_name + ": " + highscore ,canvas.width-300,24);
 		ctx.fillText("Score: " + points,canvas.width-300,49);
 	}
@@ -512,11 +512,17 @@
 
 		ctx.beginPath();
 		ctx.lineWidth="2";
-		ctx.strokeStyle="black";
+		ctx.strokeStyle="grey";
 		ctx.rect(canvas.width/2-50, canvas.height-40,100,12);
 		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width/2-48, canvas.height-38,98,8 );
+		ctx.fillStyle = "white";
+		ctx.fill();
+		ctx.closePath();
 
 		ctx.beginPath();
 		ctx.rect(canvas.width/2-48, canvas.height-38, (experience/getExperience(level))*98,8 );
@@ -525,7 +531,7 @@
 		ctx.closePath();
 
 		ctx.font = "15px Arial";
-		ctx.fillStyle = "black";
+		ctx.fillStyle = "grey";
 		ctx.fillText("Level: " + level, canvas.width/2-30,canvas.height-46);
 
 
@@ -548,11 +554,17 @@
 
 		ctx.beginPath();
 		ctx.lineWidth="2";
-		ctx.strokeStyle="black";
+		ctx.strokeStyle="grey";
 		ctx.rect(canvas.width-offset_width, canvas.height-offsetHeight,frameWidth,frameHeight);
 		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight+border, barWidth,barHeight );
+		ctx.fillStyle = "white";
+		ctx.fill();
+		ctx.closePath();
 
 		ctx.beginPath();
 		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight+border, ((handlingLevel)/handlingLevel_max)*barWidth,barHeight );
@@ -561,16 +573,22 @@
 		ctx.closePath();
 
 		ctx.font = "15px Arial";
-		ctx.fillStyle = "black";
+		ctx.fillStyle = "grey";
 		ctx.fillText("Handling: " + handlingLevel, canvas.width-offset_width,canvas.height-offsetHeight - distance_font);
 
 		ctx.beginPath();
 		ctx.lineWidth="2";
-		ctx.strokeStyle="black";
+		ctx.strokeStyle="grey";
 		ctx.rect(canvas.width-offset_width, canvas.height- offsetHeight - heightdifference, frameWidth,frameHeight);
 		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference +border, barWidth,barHeight );
+		ctx.fillStyle = "white";
+		ctx.fill();
+		ctx.closePath();
 
 		ctx.beginPath();
 		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference + border , ((brakelevel)/brakelevel_max)*barWidth,barHeight );
@@ -579,16 +597,22 @@
 		ctx.closePath();
 
 		ctx.font = "15px Arial";
-		ctx.fillStyle = "black";
+		ctx.fillStyle = "grey";
 		ctx.fillText("Brakes: " + brakelevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference - distance_font);
 
 		ctx.beginPath();
 		ctx.lineWidth="2";
-		ctx.strokeStyle="black";
+		ctx.strokeStyle="grey";
 		ctx.rect(canvas.width-offset_width, canvas.height- offsetHeight - heightdifference*2, frameWidth,frameHeight);
 		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference*2 +border, barWidth,barHeight );
+		ctx.fillStyle = "white";
+		ctx.fill();
+		ctx.closePath();
 
 		ctx.beginPath();
 		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference*2 + border , ((taxilevel)/taxilevel_max)*barWidth,barHeight );
@@ -597,11 +621,11 @@
 		ctx.closePath();
 
 		ctx.font = "15px Arial";
-		ctx.fillStyle = "black";
+		ctx.fillStyle = "grey";
 		ctx.fillText("Taxi: " + taxilevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*2 - distance_font);
 
 		ctx.font = "20px Arial";
-		ctx.fillStyle = "black";
+		ctx.fillStyle = "grey";
 		ctx.fillText("Skillpoints: " + skillpoints, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*2 - distance_font - 22);
 
 	}
@@ -677,6 +701,11 @@
 
 		if (now - spawnTime > 1000) {
 
+			if(breaking && breaking_power > 0){
+				speed = speed - Math.min(breaking_power,decelaration*dt);
+				breaking_power = breaking_power - Math.min(breaking_power,decelaration*dt);
+			}
+
 			if (leftPressed){
 				steer_angle = Math.min(steer_angle+1.5*dt,0.6);
 			}
@@ -705,12 +734,12 @@
 			}
 			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
 
-			var frontWheel = {x: pos_x + (taxiHeight/2) * Math.sin(direction),
-							y: pos_y + (taxiHeight/2) * Math.cos(direction)};
-			var backWheel = {x: pos_x - (taxiHeight/2) * Math.sin(direction),
-				y: pos_y - (taxiHeight/2) * Math.cos(direction)};
+			var frontWheel = {x: pos_x + (taxiHeight*(2/5)) * Math.sin(direction),
+							y: pos_y + (taxiHeight*(2/5)) * Math.cos(direction)};
+			var backWheel = {x: pos_x - (taxiHeight*(2/5)) * Math.sin(direction),
+				y: pos_y - (taxiHeight*(2/5)) * Math.cos(direction)};
 
-			console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
+			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
 
 
 			frontWheel.x = frontWheel.x + speed * dt * Math.sin(direction+steer_angle);
@@ -844,8 +873,10 @@
 	}
 
 	function lost(){
-		socket.emit("GameOver",{points:points, id:myID,name:name});
-		reset();
+		speed = 0;
+		acceleration = 0;
+		//socket.emit("GameOver",{points:points, id:myID,name:name});
+		//reset();
 	}
 
 	function checkCargoHit(){
@@ -913,7 +944,7 @@
 					}
 				}
 				for(r = 0; r < remove.length; r++){
-					passengersList.splice(r,1);
+					passengersList.splice(remove[r],1);
 				}
 			}
 		}
@@ -1076,7 +1107,7 @@
 		else if(e.keyCode == 70) {
 			autoPilotturningSpeed++;
 		}
-		else if(e.keyCode == 49) {
+		else if(e.keyCode == 51) {
 			if(skillpoints > 0) {
 				if (handlingLevel < handlingLevel_max) {
 					handlingLevel++;
@@ -1098,7 +1129,7 @@
 				}
 			}
 		}
-		else if(e.keyCode == 51) {
+		else if(e.keyCode == 49) {
 			if(skillpoints > 0) {
 				if (taxilevel < taxilevel_max) {
 					taxilevel++;
@@ -1143,6 +1174,73 @@
 			//console.log("field: " +field_x+"/" + field_y);
 			//console.log("window: " +window.innerWidth+"/" + window.innerHeight);
 		}
+
+	}
+
+	function collissionHandlingHouses(id){
+
+		//find collision side
+		var smallest_distance = 10000;
+		var smallest_distance_1 = -1;
+		var smallest_distance_2 = -1;
+		for(i = 0; i < houses[id].length; i++ ) {
+
+			/*
+			var r1 = { x: houses[id][i].x, y: houses[id][i].y};
+			var a = {
+				x: (houses[id][i].x - houses[id][(i+1)%(houses[id].length-1)].x),
+				y: (houses[id][i].y - houses[id][(i+1)%(houses[id].length-1)].y)
+			};
+			var rq = { x: pos_x, y:pos_y};
+
+			var b = { x: rq.x - r1.x, y: rq.y - r1.y};
+			var cross = a.x*b.y - b.x * a.y;
+
+			var top = Math.sqrt( Math.pow(cross.x,2) + Math.pow(cross.y,2) );
+			var down = Math.sqrt( Math.pow(a.x,2) + Math.pow(a.y,2));
+
+			console.log("top: " +top);
+			console.log("down: " +down);
+
+			var distance = top/down;
+			*/
+
+			var A = houses[id][i];
+			var B = houses[id][(i+1)%(houses[id].length-1)];
+
+			var n_x =  -(A.y+B.y);
+			var n_y = (A.x+B.x);
+
+			var distance = Math.abs((n_x)*(pos_x) + (n_y)*(pos_y)) / Math.sqrt( Math.pow((n_x),2) + Math.pow((n_y),2));
+
+			//var distance = ( Math.abs( (r.x * pos_y) - (r.y * pos_x) ,2) ) / (Math.sqrt( Math.pow(r.x ,2) + Math.pow(r.y,2)) );
+			console.log("distance: " + distance);
+			//console.log("distance: " + distance);
+			//console.log("pos: " + pos_x + "/" + pos_y + "line_center: " + line_center.x + "/" + line_center.y + "corners: " + houses[id][i].x + "/" + houses[id][i].y + "  " + houses[id][(i+1)%(houses[id].length-1)].x + "/" + houses[id][(i+1)%(houses[id].length-1)].y);
+
+			if(smallest_distance > distance){
+				smallest_distance = distance;
+				if(i == (houses[id].length-1) ){
+					smallest_distance_1 = i;
+					smallest_distance_2 = (i+1)%(houses[id].length-1);
+				}
+				else {
+					smallest_distance_2 = i;
+					smallest_distance_1 = (i + 1) % (houses[id].length - 1);
+				}
+			}
+
+		}
+		console.log("smallest distance: " + smallest_distance);
+
+
+		//find collision angle
+		//direction = Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y );
+		//console.log("angle: " + direction);
+
+		speed = 20;
+
+
 
 	}
 
@@ -1203,7 +1301,8 @@
 
 			var collision = doPolygonsIntersect(mycorners,houses[h]);
 			if(collision){
-				lost();
+				collissionHandlingHouses(h);
+				//lost();
 			}
 		}
 
