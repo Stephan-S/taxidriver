@@ -1,4 +1,5 @@
-var app = require('express')();
+var express= require('express');
+var app = express();
 var http = require('http').Server(app);
 var houseFunctions= require('./map_objects/houses');
 var baseFunctions= require('./map_objects/bases');
@@ -91,6 +92,8 @@ io.on('connection', function(socket){
   });
 
 });
+
+app.use('/img',express.static('img'));
 
 http.listen(3000, function(){
   console.log('listening on *:3000');
