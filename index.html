@@ -1418,13 +1418,20 @@
 	}
 
 	function collisionDetection(){
-
+		/*
 		var c1 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -0), pos_y+((taxiHeight/2) - 0)],direction);
 		var c2 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -0), pos_y-((taxiHeight/2) - 0)],direction);
 		var c3 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -0), pos_y+((taxiHeight/2) - 0)],direction);
 		var c4 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -0), pos_y-((taxiHeight/2) - 0)],direction);
-
-		var c1 = { x: pos_x + Math.sin };
+		*/
+		var c1 = [ pos_x + (taxiHeight/2) * Math.sin(direction) + (taxiWidth/2) * Math.cos(direction),
+			 pos_y + (taxiHeight/2) * Math.cos(direction) + (taxiWidth/2) * Math.sin(direction)];
+		var c2 = [ pos_x + (taxiHeight/2) * Math.sin(direction) - (taxiWidth/2) * Math.cos(direction),
+			 pos_y + (taxiHeight/2) * Math.cos(direction) - (taxiWidth/2) * Math.sin(direction)];
+		var c3 = [ pos_x - (taxiHeight/2) * Math.sin(direction) + (taxiWidth/2) * Math.cos(direction),
+			 pos_y - (taxiHeight/2) * Math.cos(direction) + (taxiWidth/2) * Math.sin(direction)];
+		var c4 = [ pos_x - (taxiHeight/2) * Math.sin(direction) - (taxiWidth/2) * Math.cos(direction),
+			 pos_y - (taxiHeight/2) * Math.cos(direction) - (taxiWidth/2) * Math.sin(direction)];
 		var mycorners = [
 			{ 	x: c1[0],
 				y: c1[1]
