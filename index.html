@@ -858,9 +858,15 @@
 			frontWheel.y = frontWheel.y + speed * dt * Math.cos(direction+steer_angle);
 			
 			if(drifting) {
-
-				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction+Math.PI/4);
-				backWheel.y = backWheel.y + speed * dt * Math.cos(direction+Math.PI/4);
+				driftangle = 0;
+				if (leftPressed){
+					driftangle = -Math.PI/4;
+				}else if (rightPressed) {
+					driftangle = +Math.PI/4;
+				}
+				
+				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction+driftangle+steer_angle/2);
+				backWheel.y = backWheel.y + speed * dt * Math.cos(direction+driftangle+steer_angle/2);
 			} else {
 				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction);
 				backWheel.y = backWheel.y + speed * dt * Math.cos(direction);
