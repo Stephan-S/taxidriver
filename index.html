@@ -71,6 +71,7 @@
 	var base = { x:75, y:75, radius:75};
 	var rightPressed = false;
 	var leftPressed = false;
+	var forwardPressed = false;
 	var socket = io();
 	var debug = false;
 	var target = {x:-1,y:-1};
@@ -344,6 +345,7 @@
 
 	}
 
+	reset();
 	draw();
 
 	function drawTaxi() {
@@ -767,7 +769,9 @@
 
 			old ={x: pos_x, y: pos_y};
 
-
+			if ( forwardPressed && speed < max_speed){
+				speed = speed + acceleration*dt;
+			}
 			if(breaking && breaking_power > 0){
 				speed = speed - Math.min(breaking_power,decelaration*dt);
 				breaking_power = breaking_power - Math.min(breaking_power,decelaration*dt);
@@ -799,7 +803,7 @@
 
 				}
 			}
-
+			/*
 			ctx.save();
 			ctx.translate(-field_x,-field_y);
 
@@ -812,7 +816,7 @@
 			ctx.closePath();
 
 			ctx.restore();
-
+			*/
 			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
 			/*
 			var frontWheelL = {x: pos_x + (taxiHeight/2) * Math.sin(direction) + (taxiWidth/2) * Math.cos(direction),
@@ -882,9 +886,7 @@
 				}
 			}
 
-			if ( speed < max_speed){
-				speed = speed + acceleration*dt;
-			}
+
 
 
 
@@ -1224,6 +1226,9 @@
 		else if(e.keyCode == 37) {
 			leftPressed = true;
 		}
+		else if(e.keyCode == 38) {
+			forwardPressed = true;
+		}
 		else if(e.keyCode == 68) {
 			debug = !debug;
 		}
@@ -1291,8 +1296,12 @@
 		else if(e.keyCode == 40) {
 			breaking = false;
 		}
+		else if(e.keyCode == 38) {
+			forwardPressed = false;
+		}
 		else if(e.keyCode == 32) {
 			drifting = false;
+
 		}
 	}
 
@@ -1420,6 +1429,8 @@
 		var c2 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -0), pos_y-((taxiHeight/2) - 0)],direction);
 		var c3 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -0), pos_y+((taxiHeight/2) - 0)],direction);
 		var c4 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -0), pos_y-((taxiHeight/2) - 0)],direction);
+
+		var c1 = { x: pos_x + Math.sin };
 		var mycorners = [
 			{ 	x: c1[0],
 				y: c1[1]
