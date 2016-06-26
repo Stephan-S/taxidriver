@@ -122,13 +122,13 @@
 
   socket.on('houses', function(serverhouses){
 
-	console.log("Getting houses")
-     houses = serverhouses
+	console.log("Getting houses");
+     houses = serverhouses;
   }); 
   socket.on('bases', function(serverbases){
 
 		console.log("Getting bases:")
-	     bases = serverbases
+	     bases = serverbases;
 	  });
 
 	socket.on('score', function(score){
@@ -858,20 +858,29 @@
 			var backWheel = {x: pos_x - (taxiHeight*(2/5)) * Math.sin(direction),
 				y: pos_y - (taxiHeight*(2/5)) * Math.cos(direction)};
 			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
-			frontWheel.x = frontWheel.x + speed * dt * Math.sin(direction+steer_angle);
-			frontWheel.y = frontWheel.y + speed * dt * Math.cos(direction+steer_angle);
 			
+			driftingFriction = 0.2;
 			if(drifting) {
 				driftangle = 0;
 				if (leftPressed){
-					driftangle = -Math.PI/4;
+					driftangle = -Math.PI/2;
+					
 				}else if (rightPressed) {
-					driftangle = +Math.PI/4;
+					driftangle = +Math.PI/2;
 				}
-				
-				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction+driftangle+steer_angle/2);
-				backWheel.y = backWheel.y + speed * dt * Math.cos(direction+driftangle+steer_angle/2);
+				driftForce_x=0;
+				driftForce_y=0;
+				if(driftangle != 0) {
+					driftForce_x = speed*driftingFriction * dt * Math.sin(direction+steer_angle);
+					driftForce_y = speed*driftingFriction * dt * Math.cos(direction+steer_angle+driftangle);
+				}
+				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction) + driftForce_x;
+				backWheel.y = backWheel.y + speed* dt * Math.cos(direction) + driftForce_y;
+				frontWheel.x = frontWheel.x + speed* dt * Math.sin(direction+steer_angle);
+				frontWheel.y = frontWheel.y + speed * dt * Math.cos(direction+steer_angle);
 			} else {
+				frontWheel.x = frontWheel.x + speed * dt * Math.sin(direction+steer_angle);
+				frontWheel.y = frontWheel.y + speed * dt * Math.cos(direction+steer_angle);
 				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction);
 				backWheel.y = backWheel.y + speed * dt * Math.cos(direction);
 			}
