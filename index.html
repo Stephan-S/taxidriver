@@ -101,7 +101,8 @@
 	var max_speed = 180;
 	var acceleration = 30;
 	var speed_gain = 10;
-	
+	var old = {x:100,y:100};
+	var override_steering = false;
 
 	ctx.font = "10px Arial";
 
@@ -735,12 +736,13 @@
 	}
 
 	function act(){
-		collisionDetection();
+
 		actTaxi();
 		actTaxis();
 		checkCargoHit();
 		deliverCargo();
 		actProjectiles();
+		collisionDetection();
 
 		if(debug) {
 			autoPilot();
@@ -762,6 +764,9 @@
 
 		if (now - spawnTime > 1000) {
 
+			old ={x: pos_x, y: pos_y};
+
+
 			if(breaking && breaking_power > 0){
 				speed = speed - Math.min(breaking_power,decelaration*dt);
 				breaking_power = breaking_power - Math.min(breaking_power,decelaration*dt);
@@ -775,7 +780,7 @@
 					steer_angle = Math.max(steer_angle-1.5*dt,-0.6);
 				}
 				else{
-					/*
+
 					if(steer_angle > 0) {
 						steer_angle = steer_angle - 1.5*dt;
 						if(steer_angle < 0){
@@ -788,29 +793,72 @@
 							steer_angle = 0;
 						}
 					}
-					*/
-					steer_angle = 0;
+
+					//steer_angle = 0;
 
 				}
 			}
-			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
 
+			ctx.save();
+			ctx.translate(-field_x,-field_y);
+
+			ctx.beginPath();
+			ctx.lineWidth="5";
+			ctx.strokeStyle = "pink";
+			ctx.moveTo(pos_x,pos_y);
+			ctx.lineTo(pos_x + Math.sin(direction+steer_angle)*40, pos_y + Math.cos(direction+steer_angle)*40);
+			ctx.stroke();
+			ctx.closePath();
+
+			ctx.restore();
+
+			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
+			/*
+			var frontWheelL = {x: pos_x + (taxiHeight/2) * Math.sin(direction) + (taxiWidth/2) * Math.cos(direction),
+							y: pos_y + (taxiHeight/2) * Math.cos(direction) + (taxiWidth/2) * Math.sin(direction)};
+			var frontWheelR = {x: pos_x + (taxiHeight/2) * Math.sin(direction) - (taxiWidth/2) * Math.cos(direction),
+				y: pos_y + (taxiHeight/2) * Math.cos(direction) - (taxiWidth/2) * Math.sin(direction)};
+			var backWheelL = {x: pos_x - (taxiHeight/2) * Math.sin(direction) + (taxiWidth/2) * Math.cos(direction),
+				y: pos_y - (taxiHeight/2) * Math.cos(direction) + (taxiWidth/2) * Math.sin(direction)};
+			var backWheelR = {x: pos_x - (taxiHeight/2) * Math.sin(direction) - (taxiWidth/2) * Math.cos(direction),
+				y: pos_y - (taxiHeight/2) * Math.cos(direction) - (taxiWidth/2) * Math.sin(direction)};
+
+
+			//console.log("wheels: " + frontWheelL.x + "/" + frontWheelL.y + "  " + backWheelL.x + "/" + backWheelL.y);
+
+
+			frontWheelL.x = frontWheelL.x + speed * dt * Math.sin(direction+steer_angle);
+			frontWheelL.y = frontWheelL.y + speed * dt * Math.cos(direction+steer_angle);
+			backWheelL.x =  backWheelL.x + speed * dt * Math.sin(direction);
+			backWheelL.y = backWheelL.y + speed * dt * Math.cos(direction);
+			frontWheelR.x = frontWheelR.x + speed * dt * Math.sin(direction+steer_angle);
+			frontWheelR.y = frontWheelR.y + speed * dt * Math.cos(direction+steer_angle);
+			backWheelR.x =  backWheelR.x + speed * dt * Math.sin(direction);
+			backWheelR.y = backWheelR.y + speed * dt * Math.cos(direction);
+
+			var frontpos = {x: frontWheelL.x - (frontWheelL.x - frontWheelR.x)/2,
+							y: frontWheelL.y - (frontWheelL.y - frontWheelR.y)/2};
+			var backpos = {x: backWheelL.x - (backWheelL.x - backWheelR.x)/2,
+				y: backWheelL.y - (backWheelL.y - backWheelR.y)/2};
+
+			//console.log("wheels: " + frontpos.x + "/" + frontpos.y + "  " + backpos.x + "/" + backpos.y);
+			
+			pos_x = (frontpos.x + backpos.x)/2;
+			pos_y = (frontpos.y + backpos.y)/2;
+
+			direction = Math.atan2((frontpos.x-backpos.x),(frontpos.y-backpos.y));
+			*/
 			var frontWheel = {x: pos_x + (taxiHeight*(2/5)) * Math.sin(direction),
-							y: pos_y + (taxiHeight*(2/5)) * Math.cos(direction)};
+				y: pos_y + (taxiHeight*(2/5)) * Math.cos(direction)};
 			var backWheel = {x: pos_x - (taxiHeight*(2/5)) * Math.sin(direction),
 				y: pos_y - (taxiHeight*(2/5)) * Math.cos(direction)};
-
 			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
-
-
 			frontWheel.x = frontWheel.x + speed * dt * Math.sin(direction+steer_angle);
 			frontWheel.y = frontWheel.y + speed * dt * Math.cos(direction+steer_angle);
 			backWheel.x =  backWheel.x + speed * dt * Math.sin(direction);
 			backWheel.y = backWheel.y + speed * dt * Math.cos(direction);
-
 			pos_x = (frontWheel.x + backWheel.x)/2;
 			pos_y = (frontWheel.y + backWheel.y)/2;
-
 			direction = Math.atan2((frontWheel.x-backWheel.x),(frontWheel.y-backWheel.y));
 
 			if( breaking_power < breaking_power_max){
@@ -1246,26 +1294,40 @@
 		var smallest_distance_2 = -1;
 		for(i = 0; i < houses[id].length; i++ ) {
 
-			/*
+
 			var r1 = { x: houses[id][i].x, y: houses[id][i].y};
 			var a = {
-				x: (houses[id][i].x - houses[id][(i+1)%(houses[id].length-1)].x),
-				y: (houses[id][i].y - houses[id][(i+1)%(houses[id].length-1)].y)
+				x: (houses[id][i].x - houses[id][(i+1)%(houses[id].length)].x),
+				y: (houses[id][i].y - houses[id][(i+1)%(houses[id].length)].y)
 			};
-			var rq = { x: pos_x, y:pos_y};
+			var rq = { x: pos_x+Math.sin(direction)*taxiHeight/2, y:pos_y+Math.cos(direction)*taxiHeight/2};
 
 			var b = { x: rq.x - r1.x, y: rq.y - r1.y};
-			var cross = a.x*b.y - b.x * a.y;
+			var cross = a.x*b.y  - b.x * a.y;
 
-			var top = Math.sqrt( Math.pow(cross.x,2) + Math.pow(cross.y,2) );
+			//var top = Math.sqrt( Math.pow(cross,2) + Math.pow(cross.y,2) );
+			var top = Math.abs(cross);
 			var down = Math.sqrt( Math.pow(a.x,2) + Math.pow(a.y,2));
 
 			console.log("top: " +top);
 			console.log("down: " +down);
 
 			var distance = top/down;
-			*/
+			/*
+			ctx.save();
+			ctx.translate(-field_x,-field_y);
 
+			ctx.beginPath();
+			ctx.lineWidth="5";
+			ctx.strokeStyle = "pink";
+			ctx.moveTo(rq.x,rq.y);
+			ctx.lineTo(rq.x + Math.sin(Math.atan2(-a.y,a.x))*distance, rq.y + Math.cos(Math.atan2(-a.y, a.x))*distance );
+			ctx.stroke();
+			ctx.closePath();
+
+			ctx.restore();
+			*/
+			/*
 			var A = houses[id][i];
 			var B = houses[id][(i+1)%(houses[id].length)];
 
@@ -1273,8 +1335,7 @@
 			var n_y = (A.x+B.x);
 
 			var distance = Math.abs((n_x)*(pos_x) + (n_y)*(pos_y)) / Math.sqrt( Math.pow((n_x),2) + Math.pow((n_y),2));
-
-			//var distance = ( Math.abs( (r.x * pos_y) - (r.y * pos_x) ,2) ) / (Math.sqrt( Math.pow(r.x ,2) + Math.pow(r.y,2)) );
+			*/
 			console.log("distance: " + distance);
 			//console.log("distance: " + distance);
 			//console.log("pos: " + pos_x + "/" + pos_y + "line_center: " + line_center.x + "/" + line_center.y + "corners: " + houses[id][i].x + "/" + houses[id][i].y + "  " + houses[id][(i+1)%(houses[id].length-1)].x + "/" + houses[id][(i+1)%(houses[id].length-1)].y);
@@ -1283,23 +1344,51 @@
 				smallest_distance = distance;
 				if(i == (houses[id].length-1) ){
 					smallest_distance_1 = i;
-					smallest_distance_2 = (i+1)%(houses[id].length-1);
+					smallest_distance_2 = (i+1)%(houses[id].length);
 				}
 				else {
 					smallest_distance_2 = i;
-					smallest_distance_1 = (i + 1) % (houses[id].length - 1);
+					smallest_distance_1 = (i + 1) % (houses[id].length);
 				}
 			}
 
 		}
-		console.log("smallest distance: " + smallest_distance);
+		//console.log("smallest distance: " + smallest_distance);
 
 
 		//find collision angle
-		//direction = Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y );
-		//console.log("angle: " + direction);
 
-		speed = 20;
+		var old_steering = steer_angle;
+		//direction = Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y );
+		console.log("direction: " + direction + "+atan2:" + (Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y ) )
+					+ " -atan: " + (Math.atan2( houses[id][smallest_distance_2].x - houses[id][smallest_distance_1].x, houses[id][smallest_distance_2].y - houses[id][smallest_distance_1].y )));
+		var atan1 = (Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y ) );
+		var atan2 = (Math.atan2( houses[id][smallest_distance_2].x - houses[id][smallest_distance_1].x, houses[id][smallest_distance_2].y - houses[id][smallest_distance_1].y ) );
+		var between1 = Math.min( 2*Math.PI - Math.abs(direction-atan1), Math.abs(direction-atan1) );
+		var between2 = Math.min( 2*Math.PI - Math.abs(direction-atan2), Math.abs(direction-atan2) );
+		if( between1 <  between2){
+			pos_x = old.x;
+			pos_y = old.y;
+
+			speed = speed * Math.cos(between1)
+
+			pos_x = pos_x + Math.sin(atan1)*speed*dt;
+			pos_y = pos_y + Math.cos(atan1)*speed*dt;
+
+
+		}else{
+			pos_x = old.x;
+			pos_y = old.y;
+
+			speed = speed * Math.cos(between2)
+
+			pos_x = pos_x + Math.sin(atan2)*speed*dt;
+			pos_y = pos_y + Math.cos(atan2)*speed*dt;
+		}
+		//actTaxi();
+		console.log("angle: " + direction);
+
+		//speed = 20;
 
 
 
@@ -1307,10 +1396,10 @@
 
 	function collisionDetection(){
 
-		var c1 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -5), pos_y+((taxiHeight/2) - 5)],direction);
-		var c2 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -5), pos_y-((taxiHeight/2) - 5)],direction);
-		var c3 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -5), pos_y+((taxiHeight/2) - 5)],direction);
-		var c4 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -5), pos_y-((taxiHeight/2) - 5)],direction);
+		var c1 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -0), pos_y+((taxiHeight/2) - 0)],direction);
+		var c2 = rotatePoint([pos_x,pos_y], [pos_x+((taxiWidth/2) -0), pos_y-((taxiHeight/2) - 0)],direction);
+		var c3 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -0), pos_y+((taxiHeight/2) - 0)],direction);
+		var c4 = rotatePoint([pos_x,pos_y], [pos_x-((taxiWidth/2) -0), pos_y-((taxiHeight/2) - 0)],direction);
 		var mycorners = [
 			{ 	x: c1[0],
 				y: c1[1]
