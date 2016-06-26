@@ -14,8 +14,7 @@
     </style>
   </head>
   <body>
-  
-  
+
 	<script src="/socket.io/socket.io.js"></script>
 	
 	<canvas id="myCanvas" width="1280" height="720"></canvas>
@@ -29,7 +28,7 @@
 
 	var taxisize = 0;
 	var taxiWidth = 15;
-	var taxiHeight = 30;
+	var taxiHeight = 34;
 	var passengers = 0;
 	var max_passengers = 1;
 	var passenger_offset_x = [0,6,-6,0,6,-6,0,6,-6,0,6,-6];
@@ -87,7 +86,13 @@
 	var breaking = false;
 	var max_turning_speed = 8;
 	var projectiles = [];
-
+	var taxiImage = new Image();
+	taxiImage.src = "/img/taxi.png";
+	taxiImage.onload = function() {
+		ctx.drawImage(taxiImage,0,0);
+	}
+	
+	
 	var velocity = {x: 0, y:0, value: function () {return Math.sqrt(Math.pow(this.x,2)+Math.pow(this.y,2))} };
 	var steer_angle = 0;
 	var steer_factor = 3;
@@ -345,8 +350,9 @@
 		ctx.translate(pos_x, pos_y);
 		ctx.translate(-field_x,-field_y);
 		ctx.rotate(-direction);
-		ctx.fillStyle = "blue";
-		ctx.fillRect(-taxiWidth / 2, -taxiHeight / 2, taxiWidth, taxiHeight);
+		//ctx.fillStyle = "blue";
+		ctx.drawImage(taxiImage,-taxiWidth/2, -taxiHeight/2, taxiWidth, taxiHeight);
+		//ctx.fillRect(-taxiWidth / 2, -taxiHeight / 2, taxiWidth, taxiHeight);
 		ctx.restore();
 
 		ctx.save();
@@ -1261,7 +1267,7 @@
 			*/
 
 			var A = houses[id][i];
-			var B = houses[id][(i+1)%(houses[id].length-1)];
+			var B = houses[id][(i+1)%(houses[id].length)];
 
 			var n_x =  -(A.y+B.y);
 			var n_y = (A.x+B.x);
