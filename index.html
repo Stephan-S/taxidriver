@@ -459,10 +459,61 @@
 			for(dot in houses[i]){
 				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
 			}
-			ctx.lineTo(houses[i][0].x,houses[i].y);
+			
+			ctx.lineTo(houses[i][0].x,houses[i][0].y);
 			ctx.closePath();
-			ctx.fillStyle = "black";
+			 /*
+			*** DISCO ***
+			center_x = 0;
+			center_y = 0;
+			for(dot in houses[i]) {
+				center_x += houses[i][dot].x;
+				center_y += houses[i][dot].y;
+			}
+			center_x = center_x/houses[i].length+Math.floor(Math.random()*20);
+			center_y = center_y/houses[i].length+Math.floor(Math.random() * 20);
+			
+			gradient = ctx.createRadialGradient(center_x,center_y,100,center_x,center_y,10);
+			randomFactor = Math.floor(Math.random()*50)
+			randomColor_full = "rgb("+(131+randomFactor)+","+(124+randomFactor)+","+(114+randomFactor)+")";
+			randomColor_brighter = "rgb("+(131+randomFactor+10)+","+(124+randomFactor+10)+","+(114+randomFactor+10)+")";
+			
+			gradient.addColorStop(0, randomColor_full);
+			gradient.addColorStop(1, randomColor_brighter);
+			ctx.fillStyle = gradient;
+			*/
+			ctx.fillStyle="#8d867c";
 			ctx.fill();
+			
+			ctx.beginPath();
+			ctx.lineWidth="8";
+			ctx.strokeStyle = "#33333";
+			ctx.moveTo(houses[i][0].x,houses[i].y);
+			for(dot in houses[i]){
+				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
+			}
+			ctx.lineTo(houses[i][0].x,houses[i][0].y);
+			//ctx.shadowColor = '#666';
+			//ctx.shadowBlur = 5;
+			//ctx.shadowOffsetX = 0;
+			//ctx.shadowOffsetY = 0;
+			ctx.stroke();
+			ctx.closePath();
+			
+			
+			ctx.beginPath();
+			ctx.lineWidth="6";
+			ctx.strokeStyle = "#c9c0b1";
+			ctx.moveTo(houses[i][0].x,houses[i].y);
+			for(dot in houses[i]){
+				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
+			}
+			ctx.lineTo(houses[i][0].x,houses[i][0].y);
+			ctx.stroke();
+			ctx.closePath();
+			
+			
+
 			ctx.restore();
 		}
 	}
