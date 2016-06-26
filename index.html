@@ -35,15 +35,14 @@
 	var passenger_offset_y = [-4,-4,-4,-12,-12,-12,-20,-20,-20,-28,-28,-28];
 	var taxiConfig = getTaxiConfig(taxisize);
 
-
 	var handlingLevel = 0;
 	var handlingLevel_max = 5;
 	var taxilevel = 0;
 	var taxilevel_max = 6;
 	var turningSpeed = getHandling(handlingLevel);
 	var autoPilotturningSpeed = 8;
-	var pos_x = Math.floor((Math.random() * canvas.width-100) + 50);
-	var pos_y = Math.floor((Math.random() * canvas.height-100) + 50);
+	var pos_x = Math.floor((Math.random() * (canvas.width-100)) + 50);
+	var pos_y = Math.floor((Math.random() * (canvas.height-100)) + 50);
 	var points = 0;
 	var min_viewdistance = 500;
 	var highscore = 0;
@@ -80,10 +79,7 @@
 	var skillpoints = 0;
 	var brakelevel = 0;
 	var brakelevel_max = 5;
-	var decelaration = (getBrakeConfig(brakelevel)).deceleration;
-	var breaking_power = 200;
-	var breaking_power_max = (getBrakeConfig(brakelevel)).breaking_power_max;
-	var breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
+	var decelaration = 80;
 	var breaking = false;
 	var drifting = false;
 	var max_turning_speed = 8;
@@ -92,19 +88,15 @@
 	taxiImage.src = "/img/taxi.png";
 	taxiImage.onload = function() {
 		ctx.drawImage(taxiImage,0,0);
-	}
+	};
 	
-	
-	var velocity = {x: 0, y:0, value: function () {return Math.sqrt(Math.pow(this.x,2)+Math.pow(this.y,2))} };
 	var steer_angle = 0;
 	var steer_factor = 3;
 	var direction = 0; // -PI to +Pi
 	var speed = 0;
 	var max_speed = 180;
-	var acceleration = 30;
-	var speed_gain = 10;
+	var acceleration = 80;
 	var old = {x:100,y:100};
-	var override_steering = false;
 
 	ctx.font = "10px Arial";
 
@@ -772,9 +764,8 @@
 			if ( forwardPressed && speed < max_speed){
 				speed = speed + acceleration*dt;
 			}
-			if(breaking && breaking_power > 0){
-				speed = speed - Math.min(breaking_power,decelaration*dt);
-				breaking_power = breaking_power - Math.min(breaking_power,decelaration*dt);
+			if(breaking && speed > -max_speed){
+				speed = speed - decelaration*dt;
 			}
 
 			if (leftPressed){
@@ -888,17 +879,6 @@
 			pos_y = (frontWheel.y + backWheel.y)/2;
 			direction = Math.atan2((frontWheel.x-backWheel.x),(frontWheel.y-backWheel.y));
 
-			if( breaking_power < breaking_power_max){
-				breaking_power += (breaking_reload*dt);
-				if(breaking_power > breaking_power_max){
-					breaking_power = breaking_power_max;
-				}
-			}
-
-
-
-
-
 		}
 	}
 
@@ -931,8 +911,8 @@
 
 			valid_pos = true;
 
-			pos_x = Math.floor((Math.random() * canvas.width-80) + 40);
-			pos_y = Math.floor((Math.random() * canvas.height-80) + 40);
+			pos_x = Math.floor((Math.random() * (canvas.width-80)) + 40);
+			pos_y = Math.floor((Math.random() * (canvas.height-80)) + 40);
 
 			var c1 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y+taxiHeight/2],direction);
 			var c2 = rotatePoint([pos_x,pos_y], [pos_x+taxiWidth/2, pos_y-taxiHeight/2],direction);
@@ -967,7 +947,6 @@
 		field_x = 0;
 		field_y = 0;
 
-
 		passengers = 0;
         passengersList = [];
 
@@ -986,23 +965,18 @@
 		points = 0;
 		spawnTime = Date.now();
 
-		brakelevel = 0;
-		decelaration = (getBrakeConfig(brakelevel)).decelaration;
-		breaking_power_max = (getBrakeConfig(brakelevel)).breaking_power_max;
-		breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
-		breaking_power = 200;
-		breaking = false;
-
-
 		level = 0;
 		experience = 0;
 		skillpoints = 0;
 
 		taxiConfig = getTaxiConfig(taxisize);
 
-		velocity.x = 0;
-		velocity.y = 0;
 		steer_angle = 0;
+
+		forwardPressed = false;
+		leftPressed = false;
+		rightPressed = false;
+		breaking = false;
 
 	}
 
@@ -1113,24 +1087,6 @@
 				return 3;
 		}
 		return 5;
-	}
-
-	function getBrakeConfig(brakelevel){
-		switch(brakelevel){
-			case 0:
-				return { decelaration:50 , breaking_power_max: 200, breaking_reload: 10};
-			case 1:
-				return { decelaration:70 , breaking_power_max: 220, breaking_reload: 15};
-			case 2:
-				return { decelaration:90 , breaking_power_max: 240, breaking_reload: 18};
-			case 3:
-				return { decelaration:110 , breaking_power_max: 260, breaking_reload: 20};
-			case 4:
-				return { decelaration:130 , breaking_power_max: 280, breaking_reload: 22};
-			case 5:
-				return { decelaration:180 , breaking_power_max: 300, breaking_reload: 24};
-		}
-		return { decelaration:50 , breaking_power_max: 200, breaking_reload: 10};
 	}
 
 	function getHandling(handlingLevel){
@@ -1258,10 +1214,7 @@
 				if (brakelevel < brakelevel_max) {
 					brakelevel++;
 
-					decelaration = (getBrakeConfig(brakelevel)).decelaration;
-					breaking_power_max = (getBrakeConfig(brakelevel)).breaking_power_max;
-					breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
-
+					decelaration = decelaration+30;
 					skillpoints--;
 				}
 			}
@@ -1292,7 +1245,7 @@
 		else if(e.keyCode == 32) {
 			drifting = true;
 		}
-		console.log("key: " + e.keyCode);
+		//console.log("key: " + e.keyCode);
 	}
 
 	function keyUpHandler(e) {
@@ -1347,8 +1300,8 @@
 			var top = Math.abs(cross);
 			var down = Math.sqrt( Math.pow(a.x,2) + Math.pow(a.y,2));
 
-			console.log("top: " +top);
-			console.log("down: " +down);
+			//console.log("top: " +top);
+			//console.log("down: " +down);
 
 			var distance = top/down;
 			/*
@@ -1374,7 +1327,7 @@
 
 			var distance = Math.abs((n_x)*(pos_x) + (n_y)*(pos_y)) / Math.sqrt( Math.pow((n_x),2) + Math.pow((n_y),2));
 			*/
-			console.log("distance: " + distance);
+			//console.log("distance: " + distance);
 			//console.log("distance: " + distance);
 			//console.log("pos: " + pos_x + "/" + pos_y + "line_center: " + line_center.x + "/" + line_center.y + "corners: " + houses[id][i].x + "/" + houses[id][i].y + "  " + houses[id][(i+1)%(houses[id].length-1)].x + "/" + houses[id][(i+1)%(houses[id].length-1)].y);
 
@@ -1398,8 +1351,8 @@
 
 		var old_steering = steer_angle;
 		//direction = Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y );
-		console.log("direction: " + direction + "+atan2:" + (Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y ) )
-					+ " -atan: " + (Math.atan2( houses[id][smallest_distance_2].x - houses[id][smallest_distance_1].x, houses[id][smallest_distance_2].y - houses[id][smallest_distance_1].y )));
+		//console.log("direction: " + direction + "+atan2:" + (Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y ) )
+					//+ " -atan: " + (Math.atan2( houses[id][smallest_distance_2].x - houses[id][smallest_distance_1].x, houses[id][smallest_distance_2].y - houses[id][smallest_distance_1].y )));
 		var atan1 = (Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y ) );
 		var atan2 = (Math.atan2( houses[id][smallest_distance_2].x - houses[id][smallest_distance_1].x, houses[id][smallest_distance_2].y - houses[id][smallest_distance_1].y ) );
 		var between1 = Math.min( 2*Math.PI - Math.abs(direction-atan1), Math.abs(direction-atan1) );
@@ -1424,7 +1377,7 @@
 			pos_y = pos_y + Math.cos(atan2)*speed*dt;
 		}
 		//actTaxi();
-		console.log("angle: " + direction);
+		//console.log("angle: " + direction);
 
 		//speed = 20;
 
