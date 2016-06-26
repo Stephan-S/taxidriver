@@ -170,7 +170,6 @@ function generateBaseChunks() {
 		}
 		
 	}
-	console.log(base_chunks);
 }
 
 
@@ -194,7 +193,6 @@ function generateWorld() {
 			}
 
 			if(isBase) {
-				console.log("Generating base.");
 				var basetype=Math.floor(Math.random()*baseFunctions.baseTypes*randomFaktor);
 				
 				switch(basetype){
@@ -290,7 +288,7 @@ function generateCargo() {
 				}
 			];
 
-			for(h=0; h < houses.length; h++){
+			for(var h=0; h < houses.length; h++){
 
 				var collision = doPolygonsIntersect(mycorners,houses[h]);
 				if(collision){
@@ -300,6 +298,13 @@ function generateCargo() {
 
 			}
 
+			for(var b=0;b < bases.length; b++) {
+				var collision = doPolygonsIntersect(mycorners,bases[b].form);
+				if(collision){
+					//console.log("collide with base");
+					valid_pos = false;
+				}
+			}
 
 		}
 
