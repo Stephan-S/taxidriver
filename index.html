@@ -84,6 +84,7 @@
 	var breaking_power_max = (getBrakeConfig(brakelevel)).breaking_power_max;
 	var breaking_reload = (getBrakeConfig(brakelevel)).breaking_reload;
 	var breaking = false;
+	var drifting = false;
 	var max_turning_speed = 8;
 	var projectiles = [];
 	var taxiImage = new Image();
@@ -855,8 +856,15 @@
 			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
 			frontWheel.x = frontWheel.x + speed * dt * Math.sin(direction+steer_angle);
 			frontWheel.y = frontWheel.y + speed * dt * Math.cos(direction+steer_angle);
-			backWheel.x =  backWheel.x + speed * dt * Math.sin(direction);
-			backWheel.y = backWheel.y + speed * dt * Math.cos(direction);
+			
+			if(drifting) {
+
+				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction+Math.PI/4);
+				backWheel.y = backWheel.y + speed * dt * Math.cos(direction+Math.PI/4);
+			} else {
+				backWheel.x =  backWheel.x + speed * dt * Math.sin(direction);
+				backWheel.y = backWheel.y + speed * dt * Math.cos(direction);
+			}
 			pos_x = (frontWheel.x + backWheel.x)/2;
 			pos_y = (frontWheel.y + backWheel.y)/2;
 			direction = Math.atan2((frontWheel.x-backWheel.x),(frontWheel.y-backWheel.y));
@@ -928,7 +936,7 @@
 				}
 			];
 
-			for(h=0; h < houses.length; h++){
+			for(var h=0; h < houses.length; h++){
 
 				var collision = doPolygonsIntersect(mycorners,houses[h]);
 				if(collision){
@@ -1255,13 +1263,16 @@
 		else if(e.keyCode == 40) {
 			breaking = true;
 		}
-		else if(e.keyCode == 32) {
+		else if(e.keyCode == 17) {
 			if (now - lastShot > 1000){
 				shootProjectile();
 				lastShot = now;
 			}
 		}
-		//console.log("key: " + e.keyCode);
+		else if(e.keyCode == 32) {
+			drifting = true;
+		}
+		console.log("key: " + e.keyCode);
 	}
 
 	function keyUpHandler(e) {
@@ -1273,6 +1284,9 @@
 		}
 		else if(e.keyCode == 40) {
 			breaking = false;
+		}
+		else if(e.keyCode == 32) {
+			drifting = false;
 		}
 	}
 
