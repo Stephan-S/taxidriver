@@ -1493,7 +1493,7 @@
 			pos_y = old.y;
 
 			health = health - Math.abs((speed/10))* Math.abs(Math.sin(between1));
-			console.log("health: " + health + "  speed: " + speed + "sin: " + Math.abs(Math.sin(between1)));
+			//console.log("health: " + health + "  speed: " + speed + "sin: " + Math.abs(Math.sin(between1)));
 			speed = speed * Math.cos(between1)
 
 			pos_x = pos_x + Math.sin(atan1)*speed*dt;
@@ -1505,7 +1505,7 @@
 			pos_y = old.y;
 
 			health = health - Math.abs((speed/10))* Math.abs(Math.sin(between2));
-			console.log("health: " + health + "  speed: " + speed + "sin: " + Math.abs(Math.sin(between2)));
+			//console.log("health: " + health + "  speed: " + speed + "sin: " + Math.abs(Math.sin(between2)));
 			speed = speed * Math.cos(between2)
 
 			pos_x = pos_x + Math.sin(atan2)*speed*dt;
