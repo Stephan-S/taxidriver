@@ -99,6 +99,12 @@
 	var speed_gain = 10;
 	var acceleration = 80;
 	var old = {x:100,y:100};
+	var health = 100;
+	var health_max = 100;
+	var health_regen = 5;
+	var friction = 35;
+
+	var speedlevel_max = 5;
 
 	ctx.font = "10px Arial";
 
@@ -658,6 +664,31 @@
 		ctx.fillStyle = "grey";
 		ctx.fillText("Level: " + level, canvas.width/2-30,canvas.height-46);
 
+		//Health Bar
+		ctx.beginPath();
+		ctx.lineWidth="2";
+		ctx.strokeStyle="grey";
+		ctx.rect(canvas.width/2-200, canvas.height-40,100,12);
+		ctx.stroke();
+		ctx.closePath();
+		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width/2-198, canvas.height-38,98,8 );
+		ctx.fillStyle = "white";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width/2-198, canvas.height-38, (Math.max(health,0)/100)*98,8 );
+		ctx.fillStyle = "yellow";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.font = "15px Arial";
+		ctx.fillStyle = "grey";
+		ctx.fillText("Health: " + level, canvas.width/2-180,canvas.height-46);
+
 
 	}
 
@@ -675,6 +706,7 @@
 		
 		ctx.save();
 
+		//Handling Level
 		ctx.beginPath();
 		ctx.lineWidth="2";
 		ctx.strokeStyle="grey";
@@ -699,6 +731,7 @@
 		ctx.fillStyle = "grey";
 		ctx.fillText("Handling: " + handlingLevel, canvas.width-offset_width,canvas.height-offsetHeight - distance_font);
 
+		//BrakeLevel
 		ctx.beginPath();
 		ctx.lineWidth="2";
 		ctx.strokeStyle="grey";
@@ -723,6 +756,7 @@
 		ctx.fillStyle = "grey";
 		ctx.fillText("Brakes: " + brakelevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference - distance_font);
 
+		//Speed Level
 		ctx.beginPath();
 		ctx.lineWidth="2";
 		ctx.strokeStyle="grey";
@@ -738,18 +772,43 @@
 		ctx.closePath();
 
 		ctx.beginPath();
-		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference*2 + border , ((taxilevel)/taxilevel_max)*barWidth,barHeight );
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference*2 + border , ((speedlevel)/speedlevel_max)*barWidth,barHeight );
 		ctx.fillStyle = "yellow";
 		ctx.fill();
 		ctx.closePath();
 
 		ctx.font = "15px Arial";
 		ctx.fillStyle = "grey";
-		ctx.fillText("Taxi: " + taxilevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*2 - distance_font);
+		ctx.fillText("Speed: " + speedlevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*2 - distance_font);
+
+		//Taxi Level
+		ctx.beginPath();
+		ctx.lineWidth="2";
+		ctx.strokeStyle="grey";
+		ctx.rect(canvas.width-offset_width, canvas.height- offsetHeight - heightdifference*3, frameWidth,frameHeight);
+		ctx.stroke();
+		ctx.closePath();
+		ctx.restore();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference*3 +border, barWidth,barHeight );
+		ctx.fillStyle = "white";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.beginPath();
+		ctx.rect(canvas.width-offset_width+border, canvas.height-offsetHeight - heightdifference*3 + border , ((taxilevel)/taxilevel_max)*barWidth,barHeight );
+		ctx.fillStyle = "yellow";
+		ctx.fill();
+		ctx.closePath();
+
+		ctx.font = "15px Arial";
+		ctx.fillStyle = "grey";
+		ctx.fillText("Taxi: " + taxilevel, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*3 - distance_font);
 
 		ctx.font = "20px Arial";
 		ctx.fillStyle = "grey";
-		ctx.fillText("Skillpoints: " + skillpoints, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*2 - distance_font - 22);
+		ctx.fillText("Skillpoints: " + skillpoints, canvas.width-offset_width,canvas.height-offsetHeight - heightdifference*3 - distance_font - 22);
 
 	}
 
@@ -813,8 +872,12 @@
 
 	function actTaxi(){
 
-		if (((pos_x + taxiWidth / 2) > fieldwidth) || ((pos_x - taxiWidth / 2) < 0) || ((pos_y + taxiHeight / 2) > fieldheight) || ((pos_y - taxiHeight / 2) < 0)) {
+		if (((pos_x + taxiWidth / 2) > fieldwidth) || ((pos_x - taxiWidth / 2) < 0) || ((pos_y + taxiHeight / 2) > fieldheight) || ((pos_y - taxiHeight / 2) < 0) || (health <= 0)) {
 			lost();
+		}
+
+		if(health < health_max){
+			health = Math.min(health + dt*health_regen,health_max);
 		}
 
 		if (now - spawnTime > 1000) {
@@ -827,13 +890,22 @@
 			if(breaking && speed > -max_speed){
 				speed = speed - decelaration*dt;
 			}
+			if(!breaking && !forwardPressed && (Math.abs(speed) > 0) ){
+				if(speed > 0){
+					speed = Math.max(0,speed - dt*friction);
+				}
+				else{
+					speed = Math.min(0,speed + dt*friction);
+				}
+
+			}
 
 			if (leftPressed){
-				steer_angle = Math.min(steer_angle+1.5*dt,0.6);
+				steer_angle = Math.min(steer_angle+turningSpeed*dt,0.6);
 			}
 			else {
 				if (rightPressed){
-					steer_angle = Math.max(steer_angle-1.5*dt,-0.6);
+					steer_angle = Math.max(steer_angle-turningSpeed*dt,-0.6);
 				}
 				else{
 
@@ -1025,6 +1097,12 @@
 		points = 0;
 		spawnTime = Date.now();
 
+		speedlevel = 0;
+		max_speed = getMaxSpeed(speedlevel);
+
+		brakelevel = 0;
+		decelaration = getBreakingForce(brakelevel);
+
 		level = 0;
 		experience = 0;
 		skillpoints = 0;
@@ -1038,12 +1116,14 @@
 		rightPressed = false;
 		breaking = false;
 
+		health = 100;
+
 	}
 
 	function lost(){
 		speed = 0;
-		acceleration = 0;
-		//reset();
+		//acceleration = 0;
+		reset();
 	}
 
 	function checkCargoHit(){
@@ -1132,17 +1212,17 @@
 	function getHandling(handlingLevel){
 		switch(handlingLevel){
 			case 0:
-				return 3;
+				return 1.5;
 			case 1:
-				return 3.5;
+				return 1.7;
 			case 2:
-				return 4;
+				return 1.9;
 			case 3:
-				return 4.5;
+				return 2.1;
 			case 4:
-				return 5;
+				return 2.3;
 			case 5:
-				return 5.5;
+				return 2.5;
 		}
 		return 3;
 	}
@@ -1224,6 +1304,44 @@
 		return configuration;
 	}
 
+	function getMaxSpeed(speedlevel){
+		switch(speedlevel){
+			case 0:
+				return 180;
+			case 1:
+				return 220;
+			case 2:
+				return 250;
+			case 3:
+				return 300;
+			case 4:
+				return 400;
+			case 5:
+				return 500;
+			default:
+				return 500;
+		}
+	}
+
+	function getBreakingForce(brakelevel){
+		switch(brakelevel){
+			case 0:
+				return 80;
+			case 1:
+				return 120;
+			case 2:
+				return 150;
+			case 3:
+				return 180;
+			case 4:
+				return 280;
+			case 5:
+				return 380;
+			default:
+				return 380;
+		}
+	}
+
 	function keyDownHandler(e) {
 		if(e.keyCode == 39) {
 			rightPressed = true;
@@ -1240,7 +1358,7 @@
 		else if(e.keyCode == 70) {
 			autoPilotturningSpeed++;
 		}
-		else if(e.keyCode == 51) {
+		else if(e.keyCode == 52) {
 			if(skillpoints > 0) {
 				if (handlingLevel < handlingLevel_max) {
 					handlingLevel++;
@@ -1249,12 +1367,12 @@
 				}
 			}
 		}
-		else if(e.keyCode == 50) {
+		else if(e.keyCode == 51) {
 			if(skillpoints > 0) {
 				if (brakelevel < brakelevel_max) {
 					brakelevel++;
 
-					decelaration = decelaration+30;
+					decelaration = getBreakingForce(brakelevel);
 					skillpoints--;
 				}
 			}
@@ -1269,6 +1387,14 @@
 					taxiWidth = getTaxiConfig(taxilevel).taxiWidth;
 					taxiHeight = getTaxiConfig(taxilevel).taxiHeight;
 
+					skillpoints--;
+				}
+			}
+		}else if(e.keyCode == 50) {
+			if(skillpoints > 0) {
+				if (speedlevel < speedlevel_max) {
+					speedlevel++;
+					max_speed = getMaxSpeed(speedlevel);
 					skillpoints--;
 				}
 			}
@@ -1358,7 +1484,6 @@
 
 
 		//find collision angle
-		var old_steering = steer_angle;
 		var atan1 = (Math.atan2( houses[id][smallest_distance_1].x - houses[id][smallest_distance_2].x, houses[id][smallest_distance_1].y - houses[id][smallest_distance_2].y ) );
 		var atan2 = (Math.atan2( houses[id][smallest_distance_2].x - houses[id][smallest_distance_1].x, houses[id][smallest_distance_2].y - houses[id][smallest_distance_1].y ) );
 		var between1 = Math.min( 2*Math.PI - Math.abs(direction-atan1), Math.abs(direction-atan1) );
@@ -1367,6 +1492,8 @@
 			pos_x = old.x;
 			pos_y = old.y;
 
+			health = health - Math.abs((speed/10))* Math.abs(Math.sin(between1));
+			console.log("health: " + health + "  speed: " + speed + "sin: " + Math.abs(Math.sin(between1)));
 			speed = speed * Math.cos(between1)
 
 			pos_x = pos_x + Math.sin(atan1)*speed*dt;
@@ -1377,6 +1504,8 @@
 			pos_x = old.x;
 			pos_y = old.y;
 
+			health = health - Math.abs((speed/10))* Math.abs(Math.sin(between2));
+			console.log("health: " + health + "  speed: " + speed + "sin: " + Math.abs(Math.sin(between2)));
 			speed = speed * Math.cos(between2)
 
 			pos_x = pos_x + Math.sin(atan2)*speed*dt;
