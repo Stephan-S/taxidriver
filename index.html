@@ -247,16 +247,11 @@
 		}
 		
 		//Determine Center of base
-		var x=0;
-		var y=0;
-		for(var i = 0;i<targetBase.form.length;i++) {
-			x = x+targetBase.form[i].x;
-			y = y+targetBase.form[i].y;
-		}
-		x=x/targetBase.form.length;
-		y=y/targetBase.form.length;
+		center = determineCenterOfPolygon(targetBase.form);
+		x = center.x;
+		y = center.y;
 		
-		//Determine angle to center
+		//Determine angle to center of base
 		var angle = Math.atan2(x-pos_x, y -pos_y);
 		
 		ctx.moveTo(pos_x,pos_y);		
@@ -487,25 +482,72 @@
 
 	}
   
+	function determineCenterOfPolygon(polygon) {
+		x = 0;
+		y = 0;
+		for(dot in polygon) {
+			x += polygon[dot].x;
+			y += polygon[dot].y;
+		}
+		return {'x': Math.floor(x/polygon.length), 'y':Math.floor(y/polygon.length)}
+		
+	}
+	
+	/*
+	* param polygon: Polygon to scale down
+	* param reduction: pixel for which each site should be reduced
+	*/
+	function downScalePolygon(polygon,reduction) {
+		
+		center = determineCenterOfPolygon(polygon);
+
+		new_polygon = [];
+		
+		for(dot in polygon) {
+			x = polygon[dot].x;
+			y = polygon[dot].y;			
+			x_vektor = x -center.x;
+			y_vektor = y -center.y;
+			distance = Math.floor(Math.sqrt(Math.pow((x_vektor),2)+Math.pow((y_vektor),2)));
+
+			x_vektor = x_vektor*(distance-reduction)/distance;
+			y_vektor = y_vektor*(distance-reduction)/distance;
+			
+			x_vektor = x_vektor + center.x;
+			y_vektor = y_vektor + center.y;
+			
+			new_polygon[new_polygon.length] = {'x':x_vektor,'y':y_vektor};		
+		}
+		
+		return new_polygon;
+		
+		
+	}
+	
 	function drawHouses(){
 		for(var i=0;i<houses.length;i++) {
 			ctx.save();
 			ctx.beginPath();
-			ctx.moveTo(houses[i][0].x,houses[i].y);
-			for(dot in houses[i]){
-				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
+			house = houses[i];
+			house = downScalePolygon(house,4);
+			
+			
+			
+			
+			ctx.moveTo(house[0].x,house.y);
+			for(dot in house){
+				ctx.lineTo(house[dot].x,house[dot].y);
 			}
 			
-			ctx.lineTo(houses[i][0].x,houses[i][0].y);
-			ctx.closePath();
+			ctx.lineTo(house[0].x,house[0].y);
 			center_x = 0;
 			center_y = 0;
-			for(dot in houses[i]) {
-				center_x += houses[i][dot].x;
-				center_y += houses[i][dot].y;
+			for(dot in house) {
+				center_x += house[dot].x;
+				center_y += house[dot].y;
 			}
-			center_x = center_x/houses[i].length-25+Math.floor(Math.random()*50);
-			center_y = center_y/houses[i].length-25+Math.floor(Math.random()*50);
+			center_x = center_x/house.length-25+Math.floor(Math.random()*50);
+			center_y = center_y/house.length-25+Math.floor(Math.random()*50);
 			
 			gradient = ctx.createRadialGradient(center_x,center_y,100,center_x,center_y,10);
 			randomFactor = Math.floor(Math.random()*50)
@@ -517,32 +559,28 @@
 	
 			ctx.fill();
 			
-			ctx.beginPath();
 			ctx.lineWidth="8";
 			ctx.strokeStyle = "#33333";
-			ctx.moveTo(houses[i][0].x,houses[i].y);
-			for(dot in houses[i]){
-				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
+			ctx.moveTo(house[0].x,house.y);
+			for(dot in house){
+				ctx.lineTo(house[dot].x,house[dot].y);
 			}
-			ctx.lineTo(houses[i][0].x,houses[i][0].y);
-			ctx.lineTo(houses[i][1].x,houses[i][1].y);
+			ctx.lineTo(house[0].x,house[0].y);
+			ctx.lineTo(house[1].x,house[1].y);
 			ctx.shadowColor = '#666';
 			ctx.shadowBlur = 5;
 			ctx.shadowOffsetX = 0;
 			ctx.shadowOffsetY = 0;
 			ctx.stroke();
-			ctx.closePath();
 			
-			
-			ctx.beginPath();
 			ctx.lineWidth="6";
 			ctx.strokeStyle = "#c9c0b1";
-			ctx.moveTo(houses[i][0].x,houses[i].y);
-			for(dot in houses[i]){
-				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
+			ctx.moveTo(house[0].x,house.y);
+			for(dot in house){
+				ctx.lineTo(house[dot].x,house[dot].y);
 			}
-			ctx.lineTo(houses[i][0].x,houses[i][0].y);
-			ctx.lineTo(houses[i][1].x,houses[i][1].y);
+			ctx.lineTo(house[0].x,house[0].y);
+			ctx.lineTo(house[1].x,house[1].y);
 			ctx.stroke();
 			ctx.closePath();
 			
