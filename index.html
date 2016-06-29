@@ -57,6 +57,7 @@
 	var taxis = [];
 	var houses = [];
 	var bases = [];
+	var mapData = ctx.getImageData(0,0,fieldwidth, fieldheight);
 	var passengersList = [];
 	var now = Date.now();
 	var time = now;
@@ -113,11 +114,22 @@
 		projectiles = serverprojectiles;
 	});
 
-  socket.on('houses', function(serverhouses){
+	socket.on('map', function(map){
+		fieldwidth = map.fieldwidth;
+		fieldheight = map.fieldheight;
 
-	console.log("Getting houses");
-     houses = serverhouses;
-  }); 
+		ctx.canvas.width  = fieldwidth;
+		ctx.canvas.height = fieldheight;
+		console.log("Getting houses");
+		houses = map.houses;
+		console.log("Getting bases:")
+		bases = map.bases;
+		drawOnce();
+
+		ctx.canvas.width  = window.innerWidth;
+		ctx.canvas.height = window.innerHeight;
+	}); 
+	
   socket.on('bases', function(serverbases){
 
 		console.log("Getting bases:")
@@ -290,6 +302,28 @@
 		this.y = y;
 	}
 
+	function drawOnce() {
+		
+		ctx.clearRect(0, 0, fieldwidth, fieldheight);
+		drawBase();
+		drawHouses();	
+		drawField();
+ 		mapData = ctx.getImageData(0,0,fieldwidth, fieldheight);
+		
+		
+		
+	}
+	
+	function adjustMap() {
+
+		ctx.save();
+		ctx.beginPath();
+		ctx.putImageData(mapData,-field_x,-field_y);
+		ctx.closePath();
+		ctx.restore();
+		
+	}
+	
 	function draw(){
 		requestAnimationFrame(draw);
 		now = Date.now();
@@ -299,8 +333,7 @@
 
 
 
-		drawHouses();
-		drawBase();
+		adjustMap();
 		drawTaxi();
 		drawScore();
 		drawCargo();
@@ -309,15 +342,7 @@
 		drawSkills();
 		drawProjectiles();
 
-		ctx.save();
-		ctx.translate(-field_x,-field_y);
-		ctx.beginPath();
-		ctx.lineWidth="6";
-		ctx.strokeStyle="black";
-		ctx.rect(3,3, fieldwidth-6, fieldheight-6);
-		ctx.stroke();
-		ctx.closePath();
-		ctx.restore();
+		
 
 		if(debug){
 			visualizeAngles();
@@ -337,6 +362,18 @@
 
 	}
 
+	function drawField() {
+		ctx.save();
+		ctx.beginPath();
+		ctx.lineWidth="6";
+		ctx.strokeStyle="black";
+		ctx.rect(3,3, fieldwidth-6, fieldheight-6);
+		ctx.stroke();
+		ctx.closePath();
+		ctx.restore();
+		
+	}
+	
 	reset();
 	draw();
 
@@ -453,7 +490,6 @@
 	function drawHouses(){
 		for(var i=0;i<houses.length;i++) {
 			ctx.save();
-			ctx.translate(-field_x,-field_y);
 			ctx.beginPath();
 			ctx.moveTo(houses[i][0].x,houses[i].y);
 			for(dot in houses[i]){
@@ -462,27 +498,23 @@
 			
 			ctx.lineTo(houses[i][0].x,houses[i][0].y);
 			ctx.closePath();
-			 /*
-			*** DISCO ***
 			center_x = 0;
 			center_y = 0;
 			for(dot in houses[i]) {
 				center_x += houses[i][dot].x;
 				center_y += houses[i][dot].y;
 			}
-			center_x = center_x/houses[i].length+Math.floor(Math.random()*20);
-			center_y = center_y/houses[i].length+Math.floor(Math.random() * 20);
+			center_x = center_x/houses[i].length-25+Math.floor(Math.random()*50);
+			center_y = center_y/houses[i].length-25+Math.floor(Math.random()*50);
 			
 			gradient = ctx.createRadialGradient(center_x,center_y,100,center_x,center_y,10);
 			randomFactor = Math.floor(Math.random()*50)
 			randomColor_full = "rgb("+(131+randomFactor)+","+(124+randomFactor)+","+(114+randomFactor)+")";
 			randomColor_brighter = "rgb("+(131+randomFactor+10)+","+(124+randomFactor+10)+","+(114+randomFactor+10)+")";
-			
 			gradient.addColorStop(0, randomColor_full);
 			gradient.addColorStop(1, randomColor_brighter);
 			ctx.fillStyle = gradient;
-			*/
-			ctx.fillStyle="#8d867c";
+	
 			ctx.fill();
 			
 			ctx.beginPath();
@@ -493,10 +525,11 @@
 				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
 			}
 			ctx.lineTo(houses[i][0].x,houses[i][0].y);
-			//ctx.shadowColor = '#666';
-			//ctx.shadowBlur = 5;
-			//ctx.shadowOffsetX = 0;
-			//ctx.shadowOffsetY = 0;
+			ctx.lineTo(houses[i][1].x,houses[i][1].y);
+			ctx.shadowColor = '#666';
+			ctx.shadowBlur = 5;
+			ctx.shadowOffsetX = 0;
+			ctx.shadowOffsetY = 0;
 			ctx.stroke();
 			ctx.closePath();
 			
@@ -509,6 +542,7 @@
 				ctx.lineTo(houses[i][dot].x,houses[i][dot].y);
 			}
 			ctx.lineTo(houses[i][0].x,houses[i][0].y);
+			ctx.lineTo(houses[i][1].x,houses[i][1].y);
 			ctx.stroke();
 			ctx.closePath();
 			
@@ -560,7 +594,6 @@
 	function drawBase(){
 
 		ctx.save();
-		ctx.translate(-field_x,-field_y);
 
 		for(b = 0; b < bases.length; b++){
 			switch(bases[b].color) {

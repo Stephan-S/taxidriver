@@ -8,6 +8,13 @@ var usercount = 0;
 var highscore = 0;
 var highscore_name = "NoOne";
 var active = false;
+var fieldwidth = 4000;
+var fieldheight = 4000;
+var chunksize = 400;
+var streetsize = 60;
+var bordersize = 120;
+var maxBases = 5;
+var randomFaktor = 2;
 
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
@@ -19,8 +26,11 @@ io.on('connection', function(socket){
   active = true;
 
   	io.emit('score', {highscore:highscore, name:highscore_name});
-	io.emit('houses', houses);
-	io.emit('bases', bases);
+  	map = {'fieldwidth':fieldwidth,
+  			'fieldheight': fieldheight,
+  			'houses': houses,
+  			'bases':bases};
+	io.emit('map', map);
 	io.emit('projectiles', projectiles);
 	
   socket.on('disconnect', function(){
@@ -144,14 +154,6 @@ function sendTaxiData(){
   }
   io.emit("taxis", taxis);
 }
-
-var fieldwidth = 4000;
-var fieldheight = 4000;
-var chunksize = 400;
-var streetsize = 60;
-var bordersize = 120;
-var maxBases = 5;
-var randomFaktor = 2;
 
 
 function generateBaseChunks() {
