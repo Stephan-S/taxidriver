@@ -51,6 +51,9 @@
 	var myID = Math.floor((Math.random() * 1000)) + 1;
 	var fieldwidth = 4000;
 	var fieldheight = 4000;
+	var chunksize = 400;
+	var streetsize = 60;
+	var bordersize = 120;
 	var field_x = 0;
 	var field_y = 0;
 	var connected = false;
@@ -117,9 +120,13 @@
 	socket.on('map', function(map){
 		fieldwidth = map.fieldwidth;
 		fieldheight = map.fieldheight;
-
+		chunksize = map.chunksize;
+		streetsize = map.streetsize;
+		bordersize = map.bordersize;
+		
 		ctx.canvas.width  = fieldwidth;
 		ctx.canvas.height = fieldheight;
+		
 		console.log("Getting houses");
 		houses = map.houses;
 		console.log("Getting bases:")
@@ -299,10 +306,11 @@
 
 	function drawOnce() {
 		
-		ctx.clearRect(0, 0, fieldwidth, fieldheight);
-		drawBase();
-		drawHouses();	
+		ctx.clearRect(0, 0, fieldwidth, fieldheight);	
 		drawField();
+		drawStreets();
+		drawBase();
+		drawHouses();
  		mapData = ctx.getImageData(0,0,fieldwidth, fieldheight);
 		
 		
@@ -364,6 +372,23 @@
 		ctx.strokeStyle="black";
 		ctx.rect(3,3, fieldwidth-6, fieldheight-6);
 		ctx.stroke();
+
+		ctx.closePath();
+		ctx.beginPath();
+		/*
+		for(x =3;x<fieldwidth-6;x++) {
+			for(y =3;y<fieldheight-6;y++) {
+				color =  Math.floor(Math.random()*30);
+				
+				ctx.fillStyle="rgb("+(30+color)+","+(23+color)+","+(25+color)+")";	
+				ctx.fillRect(x,y,1,1);
+			}	
+			
+		}
+		*/
+
+		ctx.fillStyle="rgb("+(30)+","+(23)+","+(25)+")";
+		ctx.fillRect(3,3, fieldwidth-6, fieldheight-6);	
 		ctx.closePath();
 		ctx.restore();
 		
@@ -443,7 +468,7 @@
 	}
 
 	function drawTaxis(){
-		for (var t = 0; t < taxis.length; t++) {
+		for (t = 0; t < taxis.length; t++) {
 			if(taxis[t].id != myID) {
 				ctx.save();
 				ctx.translate(-field_x,-field_y);
@@ -465,7 +490,7 @@
 				ctx.closePath();
 				ctx.restore();
 
-				for (var p = 0; p < taxis[t].passengers; p++){
+				for (p = 0; p < taxis[t].passengers; p++){
 					ctx.save();
 					ctx.translate(-field_x,-field_y);
 					ctx.translate(taxis[t].pos_x,taxis[t].pos_y);
@@ -489,7 +514,7 @@
 			x += polygon[dot].x;
 			y += polygon[dot].y;
 		}
-		return {'x': Math.floor(x/polygon.length), 'y':Math.floor(y/polygon.length)}
+		return {'x': Math.floor(x/polygon.length), 'y':Math.floor(y/polygon.length)};
 		
 	}
 	
@@ -497,7 +522,7 @@
 	* param polygon: Polygon to scale down
 	* param reduction: pixel for which each site should be reduced
 	*/
-	function downScalePolygon(polygon,reduction) {
+	function scalePolygonAroundCenter(polygon,scale) {
 		
 		center = determineCenterOfPolygon(polygon);
 
@@ -506,15 +531,15 @@
 		for(dot in polygon) {
 			x = polygon[dot].x;
 			y = polygon[dot].y;			
-			x_vektor = x -center.x;
-			y_vektor = y -center.y;
+			x_vektor = x-center.x;
+			y_vektor = y-center.y;
 			distance = Math.floor(Math.sqrt(Math.pow((x_vektor),2)+Math.pow((y_vektor),2)));
 
-			x_vektor = x_vektor*(distance-reduction)/distance;
-			y_vektor = y_vektor*(distance-reduction)/distance;
+			x_vektor = Math.floor(x_vektor*(distance+scale)/distance);
+			y_vektor = Math.floor(y_vektor*(distance+scale)/distance);
 			
-			x_vektor = x_vektor + center.x;
-			y_vektor = y_vektor + center.y;
+			x_vektor += center.x;
+			y_vektor += center.y;
 			
 			new_polygon[new_polygon.length] = {'x':x_vektor,'y':y_vektor};		
 		}
@@ -525,11 +550,10 @@
 	}
 	
 	function drawHouses(){
-		for(var i=0;i<houses.length;i++) {
+		for(i=0;i<houses.length;i++) {
 			ctx.save();
 			ctx.beginPath();
-			house = houses[i];
-			house = downScalePolygon(house,4);
+			house = scalePolygonAroundCenter(houses[i],-4);
 			
 			
 			
@@ -584,12 +608,57 @@
 			ctx.stroke();
 			ctx.closePath();
 			
-			
-
 			ctx.restore();
 		}
 	}
+	
+	
+	function drawStreets() {
 
+		maxChunksX = Math.floor((fieldwidth-2*bordersize)/chunksize);
+		maxChunksY = Math.floor((fieldheight-2*bordersize)/chunksize);
+
+		console.log(maxChunksX);
+	
+		ctx.save();
+		ctx.beginPath();
+		console.log("drawingStreets");
+		for(xId=0;xId<maxChunksX;xId++){
+			for(yId=0;yId<maxChunksY;yId++){
+				console.log("Chunk ("+xId+","+yId+")");
+				xCh = bordersize + xId*chunksize;
+				yCh =  bordersize+ yId*chunksize;
+				ctx.lineWidth="9";
+				ctx.strokeStyle = "#777777";
+				ctx.moveTo(xCh+streetsize,yCh+streetsize);
+				ctx.lineTo(xCh+chunksize-streetsize,yCh+streetsize);
+				ctx.lineTo(xCh+chunksize-streetsize,yCh+chunksize-streetsize);
+				ctx.lineTo(xCh+streetsize,yCh+chunksize-streetsize);
+				ctx.lineTo(xCh+streetsize,yCh+streetsize);
+				ctx.lineTo(xCh+chunksize-streetsize,yCh+streetsize);
+				ctx.shadowColor = '#333';
+				ctx.shadowBlur = 5;
+				ctx.shadowOffsetX = 0;
+				ctx.shadowOffsetY = 0;
+				ctx.stroke();
+				ctx.fillStyle="#888888";
+				ctx.fillRect(xCh+streetsize+3,yCh+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
+				/*
+				for(x_chunk =xCh+streetsize+3;x_chunk<xCh+chunksize-streetsize-3;x_chunk+=5) {
+					for(y_chunk =yCh+streetsize+3;y_chunk<yCh+chunksize-streetsize-3;y_chunk+=5) {
+						color = 100+Math.floor(Math.random()*40);
+						ctx.fillStyle = "rgb("+color+","+color+","+color+")";
+						ctx.fillRect(x_chunk,y_chunk,5,5);
+					}
+				}
+				*/
+			}
+		}
+
+		ctx.closePath();
+		ctx.restore();	
+		
+	}
 	function drawCargo() {
 		for(f = 0; f < cargo.length; f++){
 			ctx.save();

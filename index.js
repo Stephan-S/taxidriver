@@ -28,8 +28,12 @@ io.on('connection', function(socket){
   	io.emit('score', {highscore:highscore, name:highscore_name});
   	map = {'fieldwidth':fieldwidth,
   			'fieldheight': fieldheight,
+  			'chunksize': chunksize,
+  			'streetsize': streetsize,
+  			'bordersize': bordersize,
   			'houses': houses,
   			'bases':bases};
+  	
 	io.emit('map', map);
 	io.emit('projectiles', projectiles);
 	

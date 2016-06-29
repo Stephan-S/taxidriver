@@ -12,20 +12,20 @@ module.exports = {
 		base = {
 				'color':color,
 				'form':[{
-					'x': x+streetsize+Math.random()*20,
-					'y': y+streetsize+Math.random()*20
+					'x': x+streetsize,
+					'y': y+streetsize
 				},
 				{
-					'x': x+(chunksize-streetsize)+Math.random()*20,
-					'y': y+streetsize+Math.random()*20
+					'x': x+(chunksize-streetsize),
+					'y': y+streetsize
 				},
 				{
-					'x': x+(chunksize-streetsize)+Math.random()*20,
-					'y': y+(chunksize-streetsize)+Math.random()*20
+					'x': x+(chunksize-streetsize),
+					'y': y+(chunksize-streetsize)
 				},
 				{
-					'x': x+streetsize+Math.random()*20,
-					'y': y+(chunksize-streetsize)+Math.random()*20
+					'x': x+streetsize,
+					'y': y+(chunksize-streetsize)
 		}]};
 		bases[bases.length]=base;
 		return bases;
