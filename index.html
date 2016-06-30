@@ -329,6 +329,7 @@
 		ctx.beginPath();
 		ctx.putImageData(mapData,-field_x,-field_y);
 		ctx.closePath();
+		ctx.save();
 		ctx.restore();
 		
 	}
@@ -374,16 +375,9 @@
 	function drawField() {
 		ctx.save();
 		ctx.beginPath();
-		ctx.lineWidth="6";
-		ctx.strokeStyle="black";
-		ctx.rect(3,3, fieldwidth-6, fieldheight-6);
-		ctx.stroke();
-
-		ctx.closePath();
-		ctx.beginPath();
-		/*
-		for(x =3;x<fieldwidth-6;x++) {
-			for(y =3;y<fieldheight-6;y++) {
+		
+		for(x =3;x<Math.floor((fieldwidth-6)/10);x++) {
+			for(y =3;y<Math.floor((fieldheight-6)/10);y++) {
 				color =  Math.floor(Math.random()*30);
 				
 				ctx.fillStyle="rgb("+(30+color)+","+(23+color)+","+(25+color)+")";	
@@ -391,10 +385,25 @@
 			}	
 			
 		}
-		*/
+		ctx.closePath();
+		ctx.save();
+		ctx.beginPath();
+		backgroundPattern = ctx.getImageData(3,3,Math.floor((fieldwidth-6)/10),Math.floor((fieldheight-6)/10));
+		
+		for(x =3;x<(fieldwidth-6);x+=Math.floor((fieldwidth-6)/10)-3) {
+			for(y=3;y<(fieldheight-6);y+=Math.floor((fieldheight-6)/10)-3) {
+				ctx.putImageData(backgroundPattern,x,y);
+			}	
 
-		ctx.fillStyle="rgb("+(30)+","+(23)+","+(25)+")";
-		ctx.fillRect(3,3, fieldwidth-6, fieldheight-6);	
+		}
+		
+		ctx.closePath();
+		ctx.save();
+		ctx.beginPath();
+		ctx.lineWidth="6";
+		ctx.strokeStyle="black";
+		ctx.rect(3,3, fieldwidth-6, fieldheight-6);
+		ctx.stroke();
 		ctx.closePath();
 		ctx.restore();
 		
@@ -631,10 +640,9 @@
 		console.log("drawingStreets");
 		for(xId=0;xId<maxChunksX;xId++){
 			for(yId=0;yId<maxChunksY;yId++){
-				console.log("Chunk ("+xId+","+yId+")");
 				xCh = bordersize + xId*chunksize;
 				yCh =  bordersize+ yId*chunksize;
-				ctx.lineWidth="9";
+				ctx.lineWidth="10";
 				ctx.strokeStyle = "#777777";
 				ctx.moveTo(xCh+streetsize,yCh+streetsize);
 				ctx.lineTo(xCh+chunksize-streetsize,yCh+streetsize);
@@ -642,26 +650,48 @@
 				ctx.lineTo(xCh+streetsize,yCh+chunksize-streetsize);
 				ctx.lineTo(xCh+streetsize,yCh+streetsize);
 				ctx.lineTo(xCh+chunksize-streetsize,yCh+streetsize);
-				ctx.shadowColor = '#333';
+				/*ctx.shadowColor = '#333';
 				ctx.shadowBlur = 5;
 				ctx.shadowOffsetX = 0;
-				ctx.shadowOffsetY = 0;
+				ctx.shadowOffsetY = 0;*/
 				ctx.stroke();
-				ctx.fillStyle="#888888";
-				ctx.fillRect(xCh+streetsize+3,yCh+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
-				/*
-				for(x_chunk =xCh+streetsize+3;x_chunk<xCh+chunksize-streetsize-3;x_chunk+=5) {
-					for(y_chunk =yCh+streetsize+3;y_chunk<yCh+chunksize-streetsize-3;y_chunk+=5) {
-						color = 100+Math.floor(Math.random()*40);
-						ctx.fillStyle = "rgb("+color+","+color+","+color+")";
-						ctx.fillRect(x_chunk,y_chunk,5,5);
-					}
-				}
-				*/
+				//ctx.fillStyle="#888888";
+				//ctx.fillRect(xCh+streetsize+3,yCh+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
+				
+				
 			}
 		}
-
 		ctx.closePath();
+		ctx.save();
+		ctx.beginPath();
+		for(x_chunk =bordersize+streetsize+5;x_chunk<=bordersize+chunksize-streetsize-3;x_chunk+=5) {
+			for(y_chunk =bordersize+streetsize+5;y_chunk<=bordersize+chunksize-streetsize-3;y_chunk+=5) {
+				color = 100+Math.floor(Math.random()*40);
+				ctx.fillStyle = "rgb("+color+","+color+","+color+")";
+				ctx.fillRect(x_chunk,y_chunk,5,5);
+				ctx.strokeStyle="#555";
+				ctx.lineWidth="1";
+				ctx.strokeRect(x_chunk,y_chunk,5,5);
+				
+			}
+		}
+		
+		ctx.closePath();
+		ctx.save();
+		ctx.beginPath();
+		boardwalkPattern = ctx.getImageData(bordersize+streetsize+3,bordersize+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
+
+		for(xId=0;xId<maxChunksX;xId++){
+			for(yId=0;yId<maxChunksY;yId++){
+				ctx.save();
+				x = bordersize+xId*chunksize+streetsize;
+				y = bordersize+yId*chunksize+streetsize
+				ctx.putImageData(boardwalkPattern,x,y);
+			}
+	
+		}
+		ctx.closePath();
+		ctx.save();
 		ctx.restore();	
 		
 	}
