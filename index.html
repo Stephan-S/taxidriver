@@ -135,8 +135,10 @@
 		
 		console.log("Getting houses");
 		houses = map.houses;
+		console.log(houses);
 		console.log("Getting bases:")
 		bases = map.bases;
+		console.log(bases);
 		drawOnce();
 
 		ctx.canvas.width  = window.innerWidth;
@@ -314,6 +316,7 @@
 		
 		ctx.clearRect(0, 0, fieldwidth, fieldheight);	
 		drawField();
+		drawSidewalk();
 		drawStreets();
 		drawBase();
 		drawHouses();
@@ -371,6 +374,7 @@
 		logger();
 
 	}
+
 
 	function drawField() {
 		ctx.save();
@@ -565,7 +569,9 @@
 	}
 	
 	function drawHouses(){
+		console.log("Ich mal dann mal");
 		for(i=0;i<houses.length;i++) {
+			console.log("Auf auf");
 			ctx.save();
 			ctx.beginPath();
 			house = scalePolygonAroundCenter(houses[i],-4);
@@ -628,7 +634,7 @@
 	}
 	
 	
-	function drawStreets() {
+	function drawSidewalk() {
 
 		maxChunksX = Math.floor((fieldwidth-2*bordersize)/chunksize);
 		maxChunksY = Math.floor((fieldheight-2*bordersize)/chunksize);
@@ -637,7 +643,6 @@
 	
 		ctx.save();
 		ctx.beginPath();
-		console.log("drawingStreets");
 		for(xId=0;xId<maxChunksX;xId++){
 			for(yId=0;yId<maxChunksY;yId++){
 				xCh = bordersize + xId*chunksize;
@@ -655,8 +660,6 @@
 				ctx.shadowOffsetX = 0;
 				ctx.shadowOffsetY = 0;*/
 				ctx.stroke();
-				//ctx.fillStyle="#888888";
-				//ctx.fillRect(xCh+streetsize+3,yCh+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
 				
 				
 			}
@@ -692,8 +695,49 @@
 		}
 		ctx.closePath();
 		ctx.save();
+
+		ctx.beginPath();
+		ctx.lineWidth="10";
+		ctx.strokeStyle = "#777777";
+		ctx.strokeRect(bordersize-streetsize,bordersize-streetsize,fieldwidth-bordersize,fieldheight-bordersize);
+		ctx.closePath();
+		
 		ctx.restore();	
 		
+	}
+	
+	function drawStreets() {
+		ctx.save();
+
+		for(xId=0;xId<maxChunksX;xId++){
+			for(yId=0;yId<maxChunksY;yId++){
+
+				ctx.beginPath();
+				xCh = bordersize + xId*chunksize;
+				yCh =  bordersize+ yId*chunksize;
+				
+				ctx.setLineDash([25,35]);
+				ctx.strokeStyle="#FFFFFF";
+				
+				ctx.moveTo(xCh+streetsize+12,yCh);
+				ctx.lineTo(xCh+chunksize-streetsize,yCh);
+				
+				ctx.moveTo(xCh+chunksize,yCh+streetsize+12);
+				ctx.lineTo(xCh+chunksize, yCh+chunksize-streetsize);
+				
+				ctx.moveTo(xCh+streetsize+12,yCh+chunksize);
+				ctx.lineTo(xCh+chunksize-streetsize,yCh+chunksize);
+				
+				ctx.moveTo(xCh,yCh+streetsize+12);
+				ctx.lineTo(xCh,yCh+chunksize-streetsize);
+				
+				ctx.stroke();
+
+				ctx.closePath();
+				ctx.restore();	
+			}
+		}
+
 	}
 	function drawCargo() {
 		for(f = 0; f < cargo.length; f++){

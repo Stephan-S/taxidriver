@@ -8,11 +8,13 @@ var usercount = 0;
 var highscore = 0;
 var highscore_name = "NoOne";
 var active = false;
-var fieldwidth = 4000;
-var fieldheight = 4000;
 var chunksize = 400;
 var streetsize = 60;
 var bordersize = 120;
+
+//Setting fieldsize to multiple of chunksize;
+var fieldwidth = chunksize*10+2*bordersize;
+var fieldheight = chunksize*10+2*bordersize;
 var maxBases = 5;
 var randomFaktor = 2;
 
@@ -24,16 +26,16 @@ io.on('connection', function(socket){
   console.log('a user connected');
   usercount++;
   active = true;
-
+  
   	io.emit('score', {highscore:highscore, name:highscore_name});
-  	map = {'fieldwidth':fieldwidth,
-  			'fieldheight': fieldheight,
-  			'chunksize': chunksize,
-  			'streetsize': streetsize,
-  			'bordersize': bordersize,
-  			'houses': houses,
-  			'bases':bases};
-  	
+	map = {'fieldwidth':fieldwidth,
+		'fieldheight': fieldheight,
+		'chunksize': chunksize,
+		'streetsize': streetsize,
+		'bordersize': bordersize,
+		'houses': houses,
+		'bases':bases};
+	
 	io.emit('map', map);
 	io.emit('projectiles', projectiles);
 	
