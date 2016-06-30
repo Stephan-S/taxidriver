@@ -106,6 +106,7 @@
 	var health_max = 100;
 	var health_regen = 5;
 	var friction = 35;
+	var max_turning_angle = 0.6;
 
 	var speedlevel_max = 5;
 
@@ -1068,7 +1069,7 @@
 			if ( forwardPressed && speed < max_speed){
 				speed = speed + acceleration*dt;
 			}
-			if(breaking && speed > -max_speed){
+			if(breaking && speed > - (max_speed/3) ){
 				speed = speed - decelaration*dt;
 			}
 			if(!breaking && !forwardPressed && (Math.abs(speed) > 0) ){
@@ -1082,11 +1083,11 @@
 			}
 
 			if (leftPressed){
-				steer_angle = Math.min(steer_angle+turningSpeed*dt,0.6);
+				steer_angle = Math.min(steer_angle+turningSpeed*dt, max_turning_angle / (Math.max(100,Math.abs(speed))/100) );
 			}
 			else {
 				if (rightPressed){
-					steer_angle = Math.max(steer_angle-turningSpeed*dt,-0.6);
+					steer_angle = Math.max(steer_angle-turningSpeed*dt,- (max_turning_angle / (Math.max(100,Math.abs(speed))/100)) );
 				}
 				else{
 
@@ -1507,19 +1508,19 @@
 	function getBreakingForce(brakelevel){
 		switch(brakelevel){
 			case 0:
-				return 80;
+				return 140;
 			case 1:
-				return 120;
-			case 2:
-				return 150;
-			case 3:
 				return 180;
+			case 2:
+				return 220;
+			case 3:
+				return 300;
 			case 4:
-				return 280;
+				return 380;
 			case 5:
-				return 380;
+				return 500;
 			default:
-				return 380;
+				return 700;
 		}
 	}
 
