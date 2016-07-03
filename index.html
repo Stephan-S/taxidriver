@@ -570,13 +570,10 @@
 	}
 	
 	function drawHouses(){
-		console.log("Ich mal dann mal");
 		for(i=0;i<houses.length;i++) {
-			console.log("Auf auf");
 			ctx.save();
 			ctx.beginPath();
 			house = scalePolygonAroundCenter(houses[i],-4);
-			
 			
 			
 			
@@ -628,6 +625,24 @@
 			ctx.lineTo(house[0].x,house[0].y);
 			ctx.lineTo(house[1].x,house[1].y);
 			ctx.stroke();
+			ctx.lineWidth="3";
+			ctx.strokeStyle = "rgba(181,182,167,1)";
+			linedash = [];
+			for(d = 0;d<10;d++) {
+				linedash.push(1);
+				linedash.push(Math.floor(Math.random()*10));
+			}
+			ctx.setLineDash(linedash);
+			ctx.stroke();
+			ctx.lineWidth="4";
+			ctx.strokeStyle = "rgba(191,172,167,1)";
+			linedash = [];
+			for(d = 0;d<10;d++) {
+				linedash.push(2);
+				linedash.push(Math.floor(Math.random()*10));
+			}
+			ctx.setLineDash(linedash);
+			ctx.stroke();
 			ctx.closePath();
 			
 			ctx.restore();
@@ -642,34 +657,12 @@
 
 		console.log(maxChunksX);
 	
+		//Draw sidewalk border around every chunk
+		
 		ctx.save();
 		ctx.beginPath();
-		for(xId=0;xId<maxChunksX;xId++){
-			for(yId=0;yId<maxChunksY;yId++){
-				xCh = bordersize + xId*chunksize;
-				yCh =  bordersize+ yId*chunksize;
-				ctx.lineWidth="10";
-				ctx.strokeStyle = "#777777";
-				ctx.moveTo(xCh+streetsize,yCh+streetsize);
-				ctx.lineTo(xCh+chunksize-streetsize,yCh+streetsize);
-				ctx.lineTo(xCh+chunksize-streetsize,yCh+chunksize-streetsize);
-				ctx.lineTo(xCh+streetsize,yCh+chunksize-streetsize);
-				ctx.lineTo(xCh+streetsize,yCh+streetsize);
-				ctx.lineTo(xCh+chunksize-streetsize,yCh+streetsize);
-				/*ctx.shadowColor = '#333';
-				ctx.shadowBlur = 5;
-				ctx.shadowOffsetX = 0;
-				ctx.shadowOffsetY = 0;*/
-				ctx.stroke();
-				
-				
-			}
-		}
-		ctx.closePath();
-		ctx.save();
-		ctx.beginPath();
-		for(x_chunk =bordersize+streetsize+5;x_chunk<=bordersize+chunksize-streetsize-3;x_chunk+=5) {
-			for(y_chunk =bordersize+streetsize+5;y_chunk<=bordersize+chunksize-streetsize-3;y_chunk+=5) {
+		for(x_chunk =bordersize+streetsize;x_chunk<=bordersize+chunksize-streetsize-5;x_chunk+=5) {
+			for(y_chunk =bordersize+streetsize;y_chunk<=bordersize+chunksize-streetsize-5;y_chunk+=5) {
 				color = 100+Math.floor(Math.random()*40);
 				ctx.fillStyle = "rgb("+color+","+color+","+color+")";
 				ctx.fillRect(x_chunk,y_chunk,5,5);
@@ -679,11 +672,53 @@
 				
 			}
 		}
-		
 		ctx.closePath();
+		ctx.restore();
+		for(xId=0;xId<maxChunksX;xId++){
+			for(yId=0;yId<maxChunksY;yId++){
+				ctx.save();
+				ctx.beginPath();
+				xCh = bordersize + xId*chunksize;
+				yCh =  bordersize+ yId*chunksize;
+				ctx.lineWidth="1";
+			    ctx.lineCap = "butt";
+				ctx.strokeStyle = "rgb(140,140,140)";
+				ctx.moveTo(xCh+streetsize-10,yCh+streetsize-10);
+				ctx.lineTo(xCh+chunksize-streetsize+10,yCh+streetsize-10);
+				ctx.lineTo(xCh+chunksize-streetsize+10,yCh+chunksize-streetsize+10);
+				ctx.lineTo(xCh+streetsize-10,yCh+chunksize-streetsize+10);
+				ctx.lineTo(xCh+streetsize-10,yCh+streetsize-10);
+				ctx.stroke();
+				ctx.lineWidth="2";
+				ctx.strokeStyle = "#333333";
+				ctx.setLineDash([1,15]);
+				ctx.stroke();
+				ctx.closePath();
+				ctx.restore();
+				ctx.save();
+				ctx.beginPath();
+			    ctx.lineCap = "square";
+				ctx.moveTo(xCh+streetsize-5,yCh+streetsize-5);
+				ctx.lineTo(xCh+chunksize-streetsize+5,yCh+streetsize-5);
+				ctx.lineTo(xCh+chunksize-streetsize+5,yCh+chunksize-streetsize+5);
+				ctx.lineTo(xCh+streetsize-5,yCh+chunksize-streetsize+5);
+				ctx.lineTo(xCh+streetsize-5,yCh+streetsize-5);
+				ctx.lineWidth="9";
+				ctx.setLineDash([0]);
+				ctx.strokeStyle = "#555555";
+				ctx.stroke();
+				ctx.lineWidth="7";
+				ctx.strokeStyle = "rgb(160,160,160)";
+				ctx.stroke();
+				ctx.closePath();
+				ctx.restore();
+				
+				
+			}
+		}
 		ctx.save();
 		ctx.beginPath();
-		boardwalkPattern = ctx.getImageData(bordersize+streetsize+3,bordersize+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
+		boardwalkPattern = ctx.getImageData(bordersize+streetsize,bordersize+streetsize,chunksize-streetsize*2,chunksize-streetsize*2);
 
 		for(xId=0;xId<maxChunksX;xId++){
 			for(yId=0;yId<maxChunksY;yId++){
@@ -695,6 +730,7 @@
 	
 		}
 		ctx.closePath();
+		ctx.restore();
 		ctx.save();
 
 		ctx.beginPath();
