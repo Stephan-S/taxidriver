@@ -20,7 +20,7 @@
 	<canvas id="myCanvas" width="1280" height="720"></canvas>
 
 	<script>
-
+	"use strict";
 	var canvas = document.getElementById("myCanvas");
 	var ctx = canvas.getContext("2d");
 	ctx.canvas.width  = window.innerWidth;
@@ -60,6 +60,7 @@
 	var taxis = [];
 	var houses = [];
 	var bases = [];
+	var traffic = [];
 	var mapData = ctx.getImageData(0,0,fieldwidth, fieldheight);
 	var passengersList = [];
 	var now = Date.now();
@@ -108,7 +109,9 @@
 	var friction = 35;
 	var max_turning_angle = 0.6;
 
+	let speedlevel = 0;
 	var speedlevel_max = 5;
+	let pause = false;
 
 	ctx.font = "10px Arial";
 
@@ -141,12 +144,15 @@
 		bases = map.bases;
 		console.log(bases);
 		drawOnce();
+		createWaypoints();
+		reset();
+		draw();
 
 		ctx.canvas.width  = window.innerWidth;
 		ctx.canvas.height = window.innerHeight;
 	}); 
 	
-  socket.on('bases', function(serverbases){
+  	socket.on('bases', function(serverbases){
 
 		console.log("Getting bases:")
 	     bases = serverbases;
@@ -157,50 +163,191 @@
 		highscore_name = score.name;
 	});
 
+	socket.on('traffic', function(servertraffic){
+		traffic = servertraffic;
+	})
+
 	document.addEventListener("keydown", keyDownHandler, false);
 	document.addEventListener("keyup", keyUpHandler, false);
 
+
+	var found_street = false;
+	var auto_speed = 100;
+	var angle_override = 0;
+	var target_waypoint = -1;
+
 	function autoPilot(){
 
-		var targetFound = false;
-		var min_distance = -1;
-		if((passengers == max_passengers) || (cargo.length == 0)){
-			target = {x:base.x, y:base.y};
-			autoPilotGoToTarget();
-		}
-		else{
-			for(var c = 0; c < cargo.length; c++){
-				if(targetFound == false && cargo[c].x > 30 && cargo[c].x < (fieldwidth-30) && cargo[c].y > 30 && cargo[c].y < (fieldheight-30) ){
-					target = {x: cargo[c].x, y:cargo[c].y};
-					min_distance = Math.sqrt(Math.pow(pos_x - cargo[c].x,2)+Math.pow(pos_y - cargo[c].y,2));
-					targetFound = true;
+		if(target_waypoint == -1){
+			let mindistance = -1;
+			target_waypoint = -1;
+			for(let x = 0; x < waypoints.length; x++){
+				let between = Math.min( 2*Math.PI - Math.abs(direction-waypoints[x].direction), Math.abs(direction-waypoints[x].direction) );
+
+				if( (( (Math.sin(between) > 0)) && (Math.sqrt(Math.pow( pos_x - waypoints[x].x,2) + Math.pow(pos_y - waypoints[x].y,2)) < mindistance)) || (mindistance == -1)  ){
+
+					mindistance = (Math.sqrt(Math.pow( pos_x - waypoints[x].x,2) + Math.pow(pos_y - waypoints[x].y,2)));
+					target_waypoint = x;
+					console.log("Waypoint found: " + waypoints[target_waypoint].x + "/" + waypoints[target_waypoint].y + "  distance: " + mindistance + " angle: " + between);
+
 				}
-				else{
-					if( (min_distance - Math.sqrt(Math.pow(pos_x - cargo[c].x,2)+Math.pow(pos_y - cargo[c].y,2))) > 0){
-						target = {x: cargo[c].x, y:cargo[c].y};
-						min_distance = Math.sqrt(Math.pow(pos_x - cargo[c].x,2)+Math.pow(pos_y - cargo[c].y,2));
+			}
+			console.log("Waypoint found: " + waypoints[target_waypoint].x + "/" + waypoints[target_waypoint].y + " angle: " +Math.min( 2*Math.PI - Math.abs(direction-waypoints[target_waypoint].direction), Math.abs(direction-waypoints[target_waypoint].direction) ));
+		}
+
+		if(target_waypoint != -1){
+
+			let mindistance = (Math.sqrt(Math.pow( pos_x - waypoints[target_waypoint].x,2) + Math.pow(pos_y - waypoints[target_waypoint].y,2)));
+			if( mindistance < 15 ){
+				target_waypoint = waypoints[target_waypoint].connections[ Math.floor((Math.random() * (waypoints[target_waypoint].connections.length)))];
+			}
+
+			leftPressed = false;
+			rightPressed = false;
+			var crossProduct = Math.sin(direction) * (pos_y - waypoints[target_waypoint].y) - ( Math.cos(direction) * (pos_x - waypoints[target_waypoint].x)  );
+			if (Math.abs(crossProduct) > 0.2) {
+				if (crossProduct > 0){
+					steer_angle = Math.min(steer_angle+5*dt, max_turning_angle / (Math.max(100,Math.abs(speed))/100) );
+				}
+				else {
+					if (crossProduct < 0){
+						steer_angle = Math.max(steer_angle-5*dt,- (max_turning_angle / (Math.max(100,Math.abs(speed))/100)) );
 					}
 				}
 			}
-
-		}
-		if(targetFound){
-			autoPilotGoToTarget();
-		}
-		if(skillpoints > 0) {
-			if (taxilevel < taxilevel_max) {
-				taxilevel++;
-
-				taxiConfig = getTaxiConfig(taxilevel);
-				max_passengers = getTaxiConfig(taxilevel).max_passengers;
-				taxiWidth = getTaxiConfig(taxilevel).taxiWidth;
-				taxiHeight = getTaxiConfig(taxilevel).taxiHeight;
-
-				skillpoints--;
+			else {
+				steer_angle = 0;
 			}
+
+			let between = -Math.min( 2*Math.PI - Math.abs(direction- Math.atan2( waypoints[target_waypoint].x - pos_x, waypoints[target_waypoint].y -pos_y )),
+					Math.abs(direction- Math.atan2(waypoints[target_waypoint].x -  pos_x, waypoints[target_waypoint].y -pos_y )) )
+
+			console.log("steer_angle before: " + steer_angle);
+			if ( Math.abs(between) < Math.abs(steer_angle) && ((between*steer_angle) >= 0 )){
+				console.log("limiting steering");
+				steer_angle = between;
+
+				//stop();
+
+			}
+			console.log("angle to target: " + between + " steer_angle: " + steer_angle);
+
+
+			if (speed < 90) {
+				forwardPressed = true;
+			}
+			else {
+				forwardPressed = false;
+			}
+
 		}
 
 	}
+
+
+	let stop = () => {
+			pause = true;
+	}
+
+	var waypoints = [];
+	function createWaypoints(){
+
+		for(let xId=0;xId<maxChunksX;xId++){
+			for(let yId=0;yId<maxChunksY;yId++) {
+
+				let xCh = bordersize + xId * chunksize;
+				let yCh = bordersize + yId * chunksize;
+
+				waypoints[waypoints.length] = {x: xCh + streetsize/2, y: yCh + chunksize - streetsize, direction: Math.PI, id: 0, matching: [1]};
+				waypoints[waypoints.length] = {x: xCh + streetsize/2, y: yCh + streetsize , direction: Math.PI, id: 1, matching: [0,2,6]};
+				waypoints[waypoints.length] = {x: xCh + streetsize, y: yCh + streetsize/2 , direction: Math.PI/2, id:2 , matching: [3]};
+				waypoints[waypoints.length] = {x: xCh + chunksize - streetsize, y: yCh + streetsize/2, direction: Math.PI/2 ,id: 3, matching: [0,2,4]};
+				waypoints[waypoints.length] = {x: xCh + chunksize - streetsize/2, y: yCh + streetsize, direction:0 ,id:4 , matching: [5]};
+				waypoints[waypoints.length] = {x: xCh + chunksize - streetsize/2, y: yCh + chunksize - streetsize , direction: 0, id:5, matching: [2,4,6]};
+				waypoints[waypoints.length] = {x: xCh + chunksize - streetsize, y: yCh + chunksize - streetsize/2, direction: -Math.PI/2, id:6 ,  matching: [7] };
+				waypoints[waypoints.length] = {x: xCh + streetsize, y: yCh + chunksize - streetsize/2, direction: -Math.PI/2, id: 7,matching: [0,4,6] };
+			}
+		}
+		let wp_distance = -1;
+		for(let x = 0; x < waypoints.length; x++){
+				let w1 = waypoints[x];
+				w1.connections = [];
+			//console.log("wp: " + w1.x + "/" + w1.y);
+			for(let y = 0; y < waypoints.length; y++){
+				let w2 = waypoints[y];
+				wp_distance = distanceP(w1,w2);
+				let between = Math.min( 2*Math.PI - Math.abs(w1.direction-w2.direction), Math.abs(w1.direction-w2.direction) );
+
+				let minWpDistance = 0;
+				let maxWpDistance = 0;
+				if( [0,2,4,6].includes(w1.id) ){
+					minWpDistance = chunksize/2;
+					maxWpDistance = chunksize - streetsize;
+				}
+				else{
+					minWpDistance = 5;
+					maxWpDistance = 2*streetsize + 15;
+				}
+
+				if( (x != y) && (wp_distance < maxWpDistance) && (wp_distance > minWpDistance) && w1.matching.includes(w2.id) /*&& (between <= Math.PI/2)*/ ){
+					w1.connections[w1.connections.length] = y;
+					//console.log("	connected: " + w2.x + "/" + w2.y);
+				}
+
+
+			}
+
+		}
+
+	}
+
+	function distanceC(x1,y1,x2,y2){
+		return Math.sqrt(Math.pow(x1-x2,2) + Math.pow(y1-y2,2));
+	}
+
+	function distanceP(x,y){
+		return Math.sqrt(Math.pow(x.x-y.x,2) + Math.pow(x.y-y.y,2));
+	}
+
+
+	function drawWaypoints(){
+
+		for(let x = 0; x < waypoints.length; x++){
+			ctx.save();
+			ctx.translate(waypoints[x].x, waypoints[x].y);
+			ctx.translate(-field_x,-field_y);
+			ctx.beginPath();
+			ctx.fillStyle = "red";
+			ctx.arc(0, 0, 8, 0, 2 * Math.PI);
+
+			ctx.fill();
+
+			ctx.beginPath();
+			ctx.lineWidth="5";
+			ctx.strokeStyle = "red";
+			ctx.moveTo(0,0 );
+			ctx.lineTo( Math.sin(waypoints[x].direction)*30,Math.cos(waypoints[x].direction)*30 );
+			ctx.stroke();
+			ctx.closePath();
+
+
+			for(let i = 0; i < waypoints[x].connections.length; i++){
+				ctx.beginPath();
+				ctx.lineWidth="5";
+				ctx.strokeStyle = "blue";
+				ctx.moveTo(0,0 );
+				ctx.lineTo( waypoints[ waypoints[x].connections[i] ].x - waypoints[x].x, waypoints[ waypoints[x].connections[i] ].y - waypoints[x].y );
+				ctx.stroke();
+				ctx.closePath();
+
+			}
+
+
+			ctx.restore();
+		}
+
+	}
+
 
 	function autoPilotGoToTarget() {
 
@@ -263,9 +410,9 @@
 		}
 		
 		//Determine Center of base
-		center = determineCenterOfPolygon(targetBase.form);
-		x = center.x;
-		y = center.y;
+		let center = determineCenterOfPolygon(targetBase.form);
+		let x = center.x;
+		let y = center.y;
 		
 		//Determine angle to center of base
 		var angle = Math.atan2(x-pos_x, y -pos_y);
@@ -282,25 +429,36 @@
 	
 
 	}
-	function visualizeAngles(){
+	function visualizeAngles() {
 		//console.log("Visualizing Direction Angle");
 
 		ctx.save();
-		ctx.translate(-field_x,-field_y);
+		ctx.translate(-field_x, -field_y);
 
 		ctx.beginPath();
-		ctx.lineWidth="5";
+		ctx.lineWidth = "2";
 		ctx.strokeStyle = "orange";
-		ctx.moveTo(pos_x,pos_y);
-		ctx.lineTo(pos_x + Math.sin(direction)*30, pos_y + Math.cos(direction)*30 );
+		ctx.moveTo(pos_x, pos_y);
+		ctx.lineTo(pos_x + Math.sin(direction) * 30, pos_y + Math.cos(direction) * 30);
 		ctx.stroke();
 		ctx.closePath();
 
+		if (target_waypoint != -1) {
+
+			ctx.beginPath();
+			ctx.lineWidth = "2";
+			ctx.strokeStyle = "pink";
+			ctx.moveTo(pos_x, pos_y);
+			ctx.lineTo(pos_x + Math.sin(Math.atan2(waypoints[target_waypoint].x - pos_x, waypoints[target_waypoint].y - pos_y)) * 30, pos_y + Math.cos(Math.atan2(waypoints[target_waypoint].x - pos_x, waypoints[target_waypoint].y - pos_y)) * 30);
+			ctx.stroke();
+			ctx.closePath();
+		}
+
 		ctx.beginPath();
-		ctx.lineWidth="5";
-		ctx.strokeStyle = "pink";
-		ctx.moveTo(pos_x,pos_y);
-		ctx.lineTo(pos_x + Math.sin(Math.atan2(target.x - pos_x,target.y-pos_y))*30, pos_y + Math.cos(Math.atan2(target.x-pos_x, target.y -pos_y))*30 );
+		ctx.lineWidth = "2";
+		ctx.strokeStyle = "green";
+		ctx.moveTo(pos_x, pos_y);
+		ctx.lineTo(pos_x + Math.sin(direction+steer_angle) * 30, pos_y + Math.cos(direction+steer_angle) * 30);
 		ctx.stroke();
 		ctx.closePath();
 
@@ -352,17 +510,20 @@
 		drawScore();
 		drawCargo();
 		drawTaxis();
+		drawTraffic();
 		drawExperienceBar();
 		drawSkills();
 		drawProjectiles();
-
+		//drawWaypoints();
 		
 
 		if(debug){
 			visualizeAngles();
 		}
 
-		this.act();
+		if(!pause) {
+			act();
+		}
 
 		if((now-lastCargo) > 500){
 			socket.emit("position",{id:myID,pos_x:pos_x,pos_y:pos_y,
@@ -381,9 +542,9 @@
 		ctx.save();
 		ctx.beginPath();
 		
-		for(x =3;x<Math.floor((fieldwidth-6)/10);x++) {
-			for(y =3;y<Math.floor((fieldheight-6)/10);y++) {
-				color =  Math.floor(Math.random()*30);
+		for(let x =3;x<Math.floor((fieldwidth-6)/10);x++) {
+			for(let y =3;y<Math.floor((fieldheight-6)/10);y++) {
+				let color =  Math.floor(Math.random()*30);
 				
 				ctx.fillStyle="rgb("+(30+color)+","+(23+color)+","+(25+color)+")";	
 				ctx.fillRect(x,y,1,1);
@@ -393,10 +554,10 @@
 		ctx.closePath();
 		ctx.save();
 		ctx.beginPath();
-		backgroundPattern = ctx.getImageData(3,3,Math.floor((fieldwidth-6)/10),Math.floor((fieldheight-6)/10));
+		let backgroundPattern = ctx.getImageData(3,3,Math.floor((fieldwidth-6)/10),Math.floor((fieldheight-6)/10));
 		
-		for(x =3;x<(fieldwidth-6);x+=Math.floor((fieldwidth-6)/10)-3) {
-			for(y=3;y<(fieldheight-6);y+=Math.floor((fieldheight-6)/10)-3) {
+		for(let x =3;x<(fieldwidth-6);x+=Math.floor((fieldwidth-6)/10)-3) {
+			for(let y=3;y<(fieldheight-6);y+=Math.floor((fieldheight-6)/10)-3) {
 				ctx.putImageData(backgroundPattern,x,y);
 			}	
 
@@ -415,7 +576,7 @@
 	}
 	
 	reset();
-	draw();
+
 
 	function drawTaxi() {
 
@@ -426,6 +587,7 @@
 		ctx.drawImage(taxiImage,-taxiWidth/2, -taxiHeight/2, taxiWidth, taxiHeight);
 		ctx.restore();
 
+		/*
 		ctx.save();
 		ctx.translate(-field_x,-field_y);
 		ctx.translate(pos_x, pos_y);
@@ -436,6 +598,7 @@
 		ctx.fill();
 		ctx.closePath();
 		ctx.restore();
+		*/
 
 		for (var p = 0; p < passengers; p++) {
 			ctx.save();
@@ -488,28 +651,16 @@
 	}
 
 	function drawTaxis(){
-		for (t = 0; t < taxis.length; t++) {
+		for (let t = 0; t < taxis.length; t++) {
 			if(taxis[t].id != myID) {
-				ctx.save();
-				ctx.translate(-field_x,-field_y);
-				ctx.translate(taxis[t].pos_x, taxis[t].pos_y);
-				ctx.rotate(-taxis[t].direction);
-				ctx.fillStyle = "blue";
-				ctx.fillRect(-taxis[t].taxiWidth / 2, -taxis[t].taxiHeight / 2, taxis[t].taxiWidth, taxis[t].taxiHeight);
-
-				ctx.restore();
 
 				ctx.save();
 				ctx.translate(-field_x,-field_y);
 				ctx.translate(taxis[t].pos_x, taxis[t].pos_y);
 				ctx.rotate(-taxis[t].direction);
-				ctx.beginPath();
-				ctx.fillStyle = "black";
-				ctx.arc(0, 4, 3, 0, 2 * Math.PI);
-				ctx.fill();
-				ctx.closePath();
+				ctx.drawImage(taxiImage,-taxis[t].taxiWidth / 2, -taxis[t].taxiHeight / 2, taxis[t].taxiWidth, taxis[t].taxiHeight);
 				ctx.restore();
-
+				/*
 				for (p = 0; p < taxis[t].passengers; p++){
 					ctx.save();
 					ctx.translate(-field_x,-field_y);
@@ -522,15 +673,44 @@
 					ctx.closePath();
 					ctx.restore();
 				}
+				*/
 			}
 		}
 
 	}
-  
+
+	function drawTraffic(){
+		for (let t = 0; t < traffic.length; t++) {
+			ctx.save();
+			ctx.translate(-field_x,-field_y);
+			ctx.translate(traffic[t].pos.x, traffic[t].pos.y);
+			ctx.rotate(-traffic[t].direction);
+			ctx.drawImage(taxiImage,-traffic[t].width / 2, -traffic[t].height / 2, traffic[t].width, traffic[t].height);
+			ctx.restore();
+
+			//console.log("traffic[" + t + "]: " + traffic[t].pos.x + "/" + traffic[t].pos.y)
+			/*
+				 for (p = 0; p < taxis[t].passengers; p++){
+				 ctx.save();
+				 ctx.translate(-field_x,-field_y);
+				 ctx.translate(taxis[t].pos_x,taxis[t].pos_y);
+				 ctx.rotate(-taxis[t].direction);
+				 ctx.beginPath();
+				 ctx.fillStyle = "red";
+				 ctx.arc(passenger_offset_x[p],passenger_offset_y[p],3,0,2*Math.PI);
+				 ctx.fill();
+				 ctx.closePath();
+				 ctx.restore();
+				 }
+				 */
+
+		}
+	}
+
 	function determineCenterOfPolygon(polygon) {
-		x = 0;
-		y = 0;
-		for(dot in polygon) {
+		let x = 0;
+		let y = 0;
+		for(let dot in polygon) {
 			x += polygon[dot].x;
 			y += polygon[dot].y;
 		}
@@ -544,16 +724,16 @@
 	*/
 	function scalePolygonAroundCenter(polygon,scale) {
 		
-		center = determineCenterOfPolygon(polygon);
+		let center = determineCenterOfPolygon(polygon);
 
-		new_polygon = [];
+		let new_polygon = [];
 		
-		for(dot in polygon) {
-			x = polygon[dot].x;
-			y = polygon[dot].y;			
-			x_vektor = x-center.x;
-			y_vektor = y-center.y;
-			distance = Math.floor(Math.sqrt(Math.pow((x_vektor),2)+Math.pow((y_vektor),2)));
+		for(let dot in polygon) {
+			let x = polygon[dot].x;
+			let y = polygon[dot].y;
+			let x_vektor = x-center.x;
+			let y_vektor = y-center.y;
+			let distance = Math.floor(Math.sqrt(Math.pow((x_vektor),2)+Math.pow((y_vektor),2)));
 
 			x_vektor = Math.floor(x_vektor*(distance+scale)/distance);
 			y_vektor = Math.floor(y_vektor*(distance+scale)/distance);
@@ -571,34 +751,34 @@
 	
 	function drawHouses(){
 		console.log("Ich mal dann mal");
-		for(i=0;i<houses.length;i++) {
+		for(let i=0;i<houses.length;i++) {
 			console.log("Auf auf");
 			ctx.save();
 			ctx.beginPath();
-			house = scalePolygonAroundCenter(houses[i],-4);
+			let house = scalePolygonAroundCenter(houses[i],-4);
 			
 			
 			
 			
 			ctx.moveTo(house[0].x,house.y);
-			for(dot in house){
+			for(let dot in house){
 				ctx.lineTo(house[dot].x,house[dot].y);
 			}
 			
 			ctx.lineTo(house[0].x,house[0].y);
-			center_x = 0;
-			center_y = 0;
-			for(dot in house) {
+			let center_x = 0;
+			let center_y = 0;
+			for(let dot in house) {
 				center_x += house[dot].x;
 				center_y += house[dot].y;
 			}
 			center_x = center_x/house.length-25+Math.floor(Math.random()*50);
 			center_y = center_y/house.length-25+Math.floor(Math.random()*50);
 			
-			gradient = ctx.createRadialGradient(center_x,center_y,100,center_x,center_y,10);
-			randomFactor = Math.floor(Math.random()*50)
-			randomColor_full = "rgb("+(131+randomFactor)+","+(124+randomFactor)+","+(114+randomFactor)+")";
-			randomColor_brighter = "rgb("+(131+randomFactor+10)+","+(124+randomFactor+10)+","+(114+randomFactor+10)+")";
+			let gradient = ctx.createRadialGradient(center_x,center_y,100,center_x,center_y,10);
+			let randomFactor = Math.floor(Math.random()*50)
+			let randomColor_full = "rgb("+(131+randomFactor)+","+(124+randomFactor)+","+(114+randomFactor)+")";
+			let randomColor_brighter = "rgb("+(131+randomFactor+10)+","+(124+randomFactor+10)+","+(114+randomFactor+10)+")";
 			gradient.addColorStop(0, randomColor_full);
 			gradient.addColorStop(1, randomColor_brighter);
 			ctx.fillStyle = gradient;
@@ -608,7 +788,7 @@
 			ctx.lineWidth="8";
 			ctx.strokeStyle = "#33333";
 			ctx.moveTo(house[0].x,house.y);
-			for(dot in house){
+			for(let dot in house){
 				ctx.lineTo(house[dot].x,house[dot].y);
 			}
 			ctx.lineTo(house[0].x,house[0].y);
@@ -622,7 +802,7 @@
 			ctx.lineWidth="6";
 			ctx.strokeStyle = "#c9c0b1";
 			ctx.moveTo(house[0].x,house.y);
-			for(dot in house){
+			for(let dot in house){
 				ctx.lineTo(house[dot].x,house[dot].y);
 			}
 			ctx.lineTo(house[0].x,house[0].y);
@@ -634,7 +814,9 @@
 		}
 	}
 	
-	
+
+	let maxChunksX;
+	let maxChunksY;
 	function drawSidewalk() {
 
 		maxChunksX = Math.floor((fieldwidth-2*bordersize)/chunksize);
@@ -644,10 +826,10 @@
 	
 		ctx.save();
 		ctx.beginPath();
-		for(xId=0;xId<maxChunksX;xId++){
-			for(yId=0;yId<maxChunksY;yId++){
-				xCh = bordersize + xId*chunksize;
-				yCh =  bordersize+ yId*chunksize;
+		for(let xId=0;xId<maxChunksX;xId++){
+			for(let yId=0;yId<maxChunksY;yId++){
+				let xCh = bordersize + xId*chunksize;
+				let yCh =  bordersize+ yId*chunksize;
 				ctx.lineWidth="10";
 				ctx.strokeStyle = "#777777";
 				ctx.moveTo(xCh+streetsize,yCh+streetsize);
@@ -668,9 +850,9 @@
 		ctx.closePath();
 		ctx.save();
 		ctx.beginPath();
-		for(x_chunk =bordersize+streetsize+5;x_chunk<=bordersize+chunksize-streetsize-3;x_chunk+=5) {
-			for(y_chunk =bordersize+streetsize+5;y_chunk<=bordersize+chunksize-streetsize-3;y_chunk+=5) {
-				color = 100+Math.floor(Math.random()*40);
+		for(let x_chunk =bordersize+streetsize+5;x_chunk<=bordersize+chunksize-streetsize-3;x_chunk+=5) {
+			for(let y_chunk =bordersize+streetsize+5;y_chunk<=bordersize+chunksize-streetsize-3;y_chunk+=5) {
+				let color = 100+Math.floor(Math.random()*40);
 				ctx.fillStyle = "rgb("+color+","+color+","+color+")";
 				ctx.fillRect(x_chunk,y_chunk,5,5);
 				ctx.strokeStyle="#555";
@@ -683,13 +865,13 @@
 		ctx.closePath();
 		ctx.save();
 		ctx.beginPath();
-		boardwalkPattern = ctx.getImageData(bordersize+streetsize+3,bordersize+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
+		let boardwalkPattern = ctx.getImageData(bordersize+streetsize+3,bordersize+streetsize+3,chunksize-streetsize*2-3,chunksize-streetsize*2-3);
 
-		for(xId=0;xId<maxChunksX;xId++){
-			for(yId=0;yId<maxChunksY;yId++){
+		for(let xId=0;xId<maxChunksX;xId++){
+			for(let yId=0;yId<maxChunksY;yId++){
 				ctx.save();
-				x = bordersize+xId*chunksize+streetsize;
-				y = bordersize+yId*chunksize+streetsize
+				let x = bordersize+xId*chunksize+streetsize;
+				let y = bordersize+yId*chunksize+streetsize
 				ctx.putImageData(boardwalkPattern,x,y);
 			}
 	
@@ -710,12 +892,12 @@
 	function drawStreets() {
 		ctx.save();
 
-		for(xId=0;xId<maxChunksX;xId++){
-			for(yId=0;yId<maxChunksY;yId++){
+		for(let xId=0;xId<maxChunksX;xId++){
+			for(let yId=0;yId<maxChunksY;yId++){
 
 				ctx.beginPath();
-				xCh = bordersize + xId*chunksize;
-				yCh =  bordersize+ yId*chunksize;
+				let xCh = bordersize + xId*chunksize;
+				let yCh =  bordersize+ yId*chunksize;
 				
 				ctx.setLineDash([25,35]);
 				ctx.strokeStyle="#FFFFFF";
@@ -741,7 +923,7 @@
 
 	}
 	function drawCargo() {
-		for(f = 0; f < cargo.length; f++){
+		for(let f = 0; f < cargo.length; f++){
 			ctx.save();
 			ctx.beginPath();
 			ctx.translate(-field_x,-field_y);
@@ -783,7 +965,7 @@
 
 		ctx.save();
 
-		for(b = 0; b < bases.length; b++){
+		for(let b = 0; b < bases.length; b++){
 			switch(bases[b].color) {
 				case 0:
 					ctx.fillStyle = "red";
@@ -806,7 +988,7 @@
 			}
 			ctx.beginPath();
 			ctx.moveTo(bases[b].form[0].x, bases[b].form[0].y);
-			for(dot in bases[b].form){
+			for(let dot in bases[b].form){
 				ctx.lineTo(bases[b].form[dot].x, bases[b].form[dot].y);
 			}
 			ctx.lineTo(bases[b].form[0].x, bases[b].form[0].y);
@@ -995,7 +1177,7 @@
 	}
 
 	function drawProjectiles(){
-		for (p = 0; p < projectiles.length; p++){
+		for (let p = 0; p < projectiles.length; p++){
 
 			ctx.save();
 			ctx.beginPath();
@@ -1010,7 +1192,7 @@
 	}
 
 	function actProjectiles(){
-		for (p = 0; p < projectiles.length; p++){
+		for (let p = 0; p < projectiles.length; p++){
 
 			projectiles[p].x = projectiles[p].x + (Math.sin(projectiles[p].direction) * projectiles[p].speed * dt);
 			projectiles[p].y = projectiles[p].y + (Math.cos(projectiles[p].direction) * projectiles[p].speed * dt);
@@ -1026,7 +1208,7 @@
 
 	function shootProjectile(){
 
-		p = { 	x: pos_x + Math.sin(direction) * (taxiHeight+10),
+		let p = { 	x: pos_x + Math.sin(direction) * (taxiHeight+10),
 				y: pos_y + Math.cos(direction) * (taxiWidth+10),
 				speed: speed + 300,
 				direction: direction,
@@ -1081,31 +1263,32 @@
 				}
 
 			}
-
-			if (leftPressed){
-				steer_angle = Math.min(steer_angle+turningSpeed*dt, max_turning_angle / (Math.max(100,Math.abs(speed))/100) );
-			}
-			else {
-				if (rightPressed){
-					steer_angle = Math.max(steer_angle-turningSpeed*dt,- (max_turning_angle / (Math.max(100,Math.abs(speed))/100)) );
+			if(!debug) {
+				if (leftPressed) {
+					steer_angle = Math.min(steer_angle + turningSpeed * dt, max_turning_angle / (Math.max(100, Math.abs(speed)) / 100));
 				}
-				else{
-
-					if(steer_angle > 0) {
-						steer_angle = steer_angle - 1.5*dt;
-						if(steer_angle < 0){
-							steer_angle = 0;
-						}
+				else {
+					if (rightPressed) {
+						steer_angle = Math.max(steer_angle - turningSpeed * dt, -(max_turning_angle / (Math.max(100, Math.abs(speed)) / 100)));
 					}
-					if(steer_angle < 0) {
-						steer_angle = steer_angle + 1.5*dt;
-						if(steer_angle > 0){
-							steer_angle = 0;
+					else {
+
+						if (steer_angle > 0) {
+							steer_angle = steer_angle - 1.5 * dt;
+							if (steer_angle < 0) {
+								steer_angle = 0;
+							}
 						}
+						if (steer_angle < 0) {
+							steer_angle = steer_angle + 1.5 * dt;
+							if (steer_angle > 0) {
+								steer_angle = 0;
+							}
+						}
+
+						//steer_angle = 0;
+
 					}
-
-					//steer_angle = 0;
-
 				}
 			}
 			/*
@@ -1164,17 +1347,17 @@
 				y: pos_y - (taxiHeight*(2/5)) * Math.cos(direction)};
 			//console.log("wheels: " + frontWheel.x + "/" + frontWheel.y + "  " + backWheel.x + "/" + backWheel.y);
 			
-			driftingFriction = 0.2;
+			let driftingFriction = 0.2;
 			if(drifting) {
-				driftangle = 0;
+				let driftangle = 0;
 				if (leftPressed){
 					driftangle = -Math.PI/2;
 					
 				}else if (rightPressed) {
 					driftangle = +Math.PI/2;
 				}
-				driftForce_x=0;
-				driftForce_y=0;
+				let driftForce_x=0;
+				let driftForce_y=0;
 				if(driftangle != 0) {
 					driftForce_x = speed*driftingFriction * dt * Math.sin(direction+steer_angle);
 					driftForce_y = speed*driftingFriction * dt * Math.cos(direction+steer_angle+driftangle);
@@ -1197,6 +1380,8 @@
 	}
 
 	function actTaxis(){
+		/*
+	}
 		for (var t = 0; t < taxis.length; t++) {
 			if(taxis[t].id != myID) {
 				if (taxis[t].leftPressed){
@@ -1215,6 +1400,7 @@
 				taxis[t].pos_y = taxis[t].pos_y + Math.cos(taxis[t].direction)*dt*taxis[t].speed;
 			}
 		}
+		*/
 	}
 
 	function reset(){
@@ -1352,15 +1538,13 @@
 			}
 		];
 
-		for(b=0; b < bases.length; b++){
+		for(let b=0; b < bases.length; b++){
 
 			var collision = doPolygonsIntersect(mycorners,bases[b].form);
 			if(collision){
-				var remove = [];
-				for( p = 0; p < passengersList.length; p++){
+				for(let p = 0; p < passengersList.length; p++){
 
 					if(passengersList[p].color == bases[b].color){
-						max_speed = max_speed + speed_gain;
 						points++;
 						experience++;
 						while( experience >= getExperience(level)){
@@ -1369,11 +1553,9 @@
 							skillpoints++;
 						}
 						passengers--;
-						remove[remove.length] = p;
+						passengersList.splice(p,1);
+						p--;
 					}
-				}
-				for(r = 0; r < remove.length; r++){
-					passengersList.splice(remove[r],1);
 				}
 			}
 		}
@@ -1585,10 +1767,14 @@
 			breaking = true;
 		}
 		else if(e.keyCode == 17) {
+
+			pause = !pause;
+			/*
 			if (now - lastShot > 1000){
 				shootProjectile();
 				lastShot = now;
 			}
+			*/
 		}
 		else if(e.keyCode == 32) {
 			drifting = true;
@@ -1629,7 +1815,7 @@
 		var smallest_distance = 10000;
 		var smallest_distance_1 = -1;
 		var smallest_distance_2 = -1;
-		for(i = 0; i < houses[id].length; i++ ) {
+		for(let i = 0; i < houses[id].length; i++ ) {
 
 
 			var r1 = { x: houses[id][i].x, y: houses[id][i].y};
@@ -1732,7 +1918,7 @@
 			}
 		];
 
-		for(t=0; t < taxis.length; t++){
+		for(let t=0; t < taxis.length; t++){
 
 			if(taxis[t].id != myID){				
 
@@ -1764,7 +1950,7 @@
 
 		}
 
-		for(h=0; h < houses.length; h++){
+		for(let h=0; h < houses.length; h++){
 
 			var collision = doPolygonsIntersect(mycorners,houses[h]);
 			if(collision){
@@ -1773,7 +1959,7 @@
 			}
 		}
 
-		for( p = 0; p < projectiles.length; p++){
+		for(let p = 0; p < projectiles.length; p++){
 			if( Math.sqrt(Math.pow(projectiles[p].x - pos_x,2) + Math.pow(projectiles[p].y - pos_y,2)) < (2+taxiWidth/2) ) {
 				if (projectiles[p].shooter != myID) {
 					lost();
